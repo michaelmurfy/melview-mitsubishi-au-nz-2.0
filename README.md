@@ -71,8 +71,8 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `password` | string | yes | — | Your Mitsubishi Wi-Fi Control password |
 | `dry` | boolean | no | `false` | Enable Dehumidifier accessory for dry mode |
 | `fanMode` | boolean | no | `false` | Enable Fan accessory for fan-only mode |
-| `airflowH` | boolean | no | `false` | Enable Switch accessory for horizontal swing |
-| `swingMode` | boolean | no | `false` | Enable vertical swing mode control on the main AC tile. Enable only if needed; some units reject swing commands during power transitions. |
+| `swingMode` | boolean | no | `false` | Enable vertical airflow swing on the main AC tile. Enable only if needed; some units reject swing commands during power transitions. |
+| `airflowH` | boolean | no | `false` | Enable horizontal airflow swing. Horizontal swing is not supported by many units. |
 | `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on a separate Fan accessory (auto-added) |
 | `fanSpeedOnMainTile` | boolean | no | `false` | *(advanced)* Also show fan speed slider on the main AC tile (requires `fanSpeed: true`) |
 | `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
@@ -90,8 +90,8 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "password": "yourpassword",
       "dry": true,
       "fanMode": true,
-      "airflowH": false,
       "swingMode": false,
+      "airflowH": false,
       "fanSpeed": false,
       "fanSpeedOnMainTile": false,
       "outdoorTemp": false,
@@ -143,7 +143,7 @@ mapped to HomeKit's 0–100% rotation speed slider in steps of 20%:
 The slider is constrained to these values — dragging to any other position snaps to
 the nearest valid stage.
 
-### Vertical swing
+### Vertical airflow swing (`swingMode: true`)
 
 On units where `hasswing` or `hasairdir` is reported by the API, a **Swing Mode**
 toggle can be added to the Heater/Cooler service by setting `swingMode: true`
@@ -198,11 +198,14 @@ To also show fan speed on the main **Air Conditioner** tile, set:
 > bridge reconnect, which mitigates but may not fully eliminate this behaviour on
 > all controllers.
 
-### Horizontal swing (`airflowH: true`)
+### Horizontal airflow swing (`airflowH: true`)
 
 When enabled and the unit reports `hasairdirh`, a **Switch** accessory is added:
 - **ON** → horizontal louvre sweeps continuously left–right
 - **OFF** → louvre returns to centre fixed position
+
+Horizontal airflow swing is not supported by many Mitsubishi units, so this option
+may not appear even when enabled.
 
 ## State polling
 

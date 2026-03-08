@@ -94,6 +94,32 @@ export class HeatCoolService extends AbstractService {
         return this.device.name!;
     }
 
+    private normalizeTargetHeaterCoolerState(value: CharacteristicValue): number | undefined {
+        const c = this.platform.Characteristic.TargetHeaterCoolerState;
+        const parsed = Number(value);
+        if (parsed === c.AUTO || parsed === c.HEAT || parsed === c.COOL) {
+            return parsed;
+        }
+        return undefined;
+    }
+
+    private async sendPowerCommandWithRetry(power: 0 | 1): Promise<void> {
+        const melviewService = this.platform.melviewService;
+        if (!melviewService) {
+            throw new Error('melviewService is not initialised');
+        }
+
+        try {
+            await melviewService.command(new CommandPower(power, this.device, this.platform));
+            return;
+        } catch (firstError) {
+            this.log.warn(`Power command PW${power} failed, retrying once:`, String(firstError));
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        await melviewService.command(new CommandPower(power, this.device, this.platform));
+    }
+
     async getActive(): Promise<CharacteristicValue> {
         const power = this.device.state?.power ?? -1;
         const mode = this.device.state?.setmode ?? -1;
@@ -113,32 +139,17 @@ export class HeatCoolService extends AbstractService {
         }
         try {
             if (turningOn) {
-                const currentMode = this.device.state?.setmode;
-                const inferredTarget =
-                    currentMode === WorkMode.HEAT ? c.TargetHeaterCoolerState.HEAT :
-                        currentMode === WorkMode.COOL ? c.TargetHeaterCoolerState.COOL :
-                            currentMode === WorkMode.AUTO ? c.TargetHeaterCoolerState.AUTO :
-                                c.TargetHeaterCoolerState.AUTO;
-                const restoreTarget = this.accessory.context.lastMainTargetState ?? inferredTarget;
-
-                // Always restore/affirm a valid main-tile mode when turning on.
-                await this.platform.melviewService.command(
-                    new CommandPower(1, this.device, this.platform),
-                    new CommandTargetHeaterCoolerState(restoreTarget, this.device, this.platform),
-                );
+                // Toggle power only. Avoid mode writes during tile toggle to prevent Melview command-chain rejections.
+                await this.sendPowerCommandWithRetry(1);
 
                 // Optimistically reflect ON state immediately in HomeKit.
                 this.service.updateCharacteristic(c.Active, c.Active.ACTIVE);
-                this.service.updateCharacteristic(c.TargetHeaterCoolerState, restoreTarget);
-                const currentState = await this.getCurrentHeaterCoolerState(
-                    restoreTarget === c.TargetHeaterCoolerState.HEAT ? WorkMode.HEAT :
-                        restoreTarget === c.TargetHeaterCoolerState.COOL ? WorkMode.COOL :
-                            WorkMode.AUTO,
-                );
+                const targetState = await this.getTargetHeaterCoolerState();
+                this.service.updateCharacteristic(c.TargetHeaterCoolerState, targetState);
+                const currentState = await this.getCurrentHeaterCoolerState();
                 this.service.updateCharacteristic(c.CurrentHeaterCoolerState, currentState);
             } else {
-                await this.platform.melviewService.command(
-                    new CommandPower(0, this.device, this.platform));
+                await this.sendPowerCommandWithRetry(0);
 
                 // Optimistically reflect OFF state immediately in HomeKit.
                 this.service.updateCharacteristic(c.Active, c.Active.INACTIVE);
@@ -259,12 +270,17 @@ export class HeatCoolService extends AbstractService {
 
     async setTargetHeaterCoolerState(value: CharacteristicValue) {
         this.platform.log.debug('setTargetHeaterCoolerState ->', value);
+        const normalizedTarget = this.normalizeTargetHeaterCoolerState(value);
+        if (normalizedTarget === undefined) {
+            this.log.warn('setTargetHeaterCoolerState skipped invalid value:', String(value));
+            return;
+        }
         try {
             await this.platform.melviewService?.command(
-                new CommandTargetHeaterCoolerState(value, this.device, this.platform));
-            this.accessory.context.lastMainTargetState = value;
+                new CommandTargetHeaterCoolerState(normalizedTarget, this.device, this.platform));
+            this.accessory.context.lastMainTargetState = normalizedTarget;
             const c = this.platform.Characteristic;
-            switch (value) {
+            switch (normalizedTarget) {
                 case c.TargetHeaterCoolerState.COOL:
                     this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.COOLING);
                     return;

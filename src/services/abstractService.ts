@@ -71,7 +71,16 @@ export abstract class AbstractService {
      * Normalizes HomeKit Active values across number/boolean/string variants.
      */
     protected isActiveOn(value: CharacteristicValue): boolean {
-        return value === this.platform.Characteristic.Active.ACTIVE || value === true || value === '1';
+        if (value === this.platform.Characteristic.Active.ACTIVE || value === true || value === 1) {
+            return true;
+        }
+        if (typeof value === 'string') {
+            const normalized = value.trim().toLowerCase();
+            if (normalized === '1' || normalized === 'true' || normalized === 'active' || normalized === 'on') {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected get log () : Logger {

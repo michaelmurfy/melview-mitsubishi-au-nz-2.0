@@ -33,7 +33,8 @@ export abstract class AbstractCommand implements Command{
 
 export class CommandPower extends AbstractCommand {
   public execute(): string {
-    const requestedOn = this.value === 1 || this.value === true || this.value === '1';
+    const normalized = typeof this.value === 'string' ? this.value.trim().toLowerCase() : this.value;
+    const requestedOn = normalized === 1 || normalized === true || normalized === '1' || normalized === 'true' || normalized === 'on';
     const power = requestedOn ? 1 : 0;
     this.device.state!.power = power;
     return 'PW' + power;
@@ -42,7 +43,8 @@ export class CommandPower extends AbstractCommand {
 
 export class CommandTargetHeaterCoolerState extends AbstractCommand {
   public execute(): string {
-    switch (this.value) {
+    const target = Number(this.value);
+    switch (target) {
       case this.platform.Characteristic.TargetHeaterCoolerState.COOL:
                 this.device.state!.setmode = WorkMode.COOL;
         return 'MD' + WorkMode.COOL;
@@ -59,7 +61,8 @@ export class CommandTargetHeaterCoolerState extends AbstractCommand {
 
 export class CommandTargetHumidifierDehumidifierState extends AbstractCommand {
   public execute(): string {
-    switch (this.value) {
+    const target = Number(this.value);
+    switch (target) {
       case this.platform.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER:
                 this.device.state!.setmode = WorkMode.DRY;
         return 'MD' + WorkMode.DRY;

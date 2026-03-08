@@ -30,17 +30,17 @@
         "default": false,
         "description": "Adds a Fan service that lets you run the unit in fan-only mode without heating or cooling. This service is also added automatically when fanSpeed is enabled."
       },
+      "swingMode": {
+        "title": "Enable Vertical Airflow Swing",
+        "type": "boolean",
+        "default": false,
+        "description": "Adds vertical airflow swing control to the main AC tile on supported models. Some units may reject swing commands during power transitions; if this affects tile toggling, leave disabled and set swing to 'Auto' on your physical remote."
+      },
       "airflowH": {
         "title": "Enable Horizontal Airflow Swing",
         "type": "boolean",
         "default": false,
-        "description": "Adds a Switch service for horizontal airflow direction on supported models (ON = sweep, OFF = centre)."
-      },
-      "swingMode": {
-        "title": "Enable Vertical Swing Mode on Main Tile",
-        "type": "boolean",
-        "default": false,
-        "description": "Enables vertical swing mode control on the main AC tile for supported models. Note: Some units may reject swing commands during power transitions. If you experience tile toggle issues, leave this disabled and set swing to 'Auto' on your physical remote."
+        "description": "Adds horizontal airflow swing control on supported models (ON = sweep, OFF = centre). Horizontal swing is not supported by many Mitsubishi units."
       },
       "fanSpeed": {
         "title": "Enable Fan Speed Control (experimental)",
@@ -88,12 +88,12 @@
               "title": "Enable Fan-Only Mode",
               "type": "boolean"
             },
-            "airflowH": {
-              "title": "Enable Horizontal Airflow Swing",
+            "swingMode": {
+              "title": "Enable Vertical Airflow Swing",
               "type": "boolean"
             },
-            "swingMode": {
-              "title": "Enable Vertical Swing Mode on Main Tile",
+            "airflowH": {
+              "title": "Enable Horizontal Airflow Swing",
               "type": "boolean"
             },
             "fanSpeed": {

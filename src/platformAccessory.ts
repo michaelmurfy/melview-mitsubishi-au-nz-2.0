@@ -12,6 +12,7 @@ interface EffectiveConfig {
   dry: boolean;
   fanMode: boolean;
   airflowH: boolean;
+  swingMode: boolean;
   fanSpeed: boolean;
   fanSpeedOnMainTile: boolean;
   outdoorTemp: boolean;
@@ -200,6 +201,7 @@ export class MelviewMitsubishiPlatformAccessory {
       dry: this.resolveBoolean('dry', false, override),
       fanMode: this.resolveBoolean('fanMode', false, override),
       airflowH: this.resolveBoolean('airflowH', false, override),
+      swingMode: this.resolveBoolean('swingMode', false, override),
       fanSpeed: this.resolveBoolean('fanSpeed', false, override),
       fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override),
       outdoorTemp: this.resolveBoolean('outdoorTemp', false, override),
