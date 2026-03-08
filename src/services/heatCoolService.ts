@@ -60,6 +60,13 @@ export class HeatCoolService extends AbstractService {
             this.service.getCharacteristic(this.platform.Characteristic.SwingMode)
                 .onSet(this.setSwingMode.bind(this))
                 .onGet(this.getSwingMode.bind(this));
+        } else {
+            // Remove cached SwingMode characteristic when disabled/unavailable so HomeKit
+            // does not continue showing an Oscillate toggle from previous plugin versions.
+            if (this.service.testCharacteristic(this.platform.Characteristic.SwingMode)) {
+                const staleSwing = this.service.getCharacteristic(this.platform.Characteristic.SwingMode);
+                this.service.removeCharacteristic(staleSwing);
+            }
         }
 
         // Fan Speed Control on main AC tile — optional, disabled by default.
