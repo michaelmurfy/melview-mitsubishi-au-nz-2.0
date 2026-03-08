@@ -49,13 +49,13 @@ is supported. Tested against:
 
 ### Homebridge UI (recommended)
 
-Search for `homebridge-airconditioner-mitsubishi-au-nz-2.0` in the Homebridge plugin
+Search for `homebridge-airconditioner-mitsubishi-au-nz-v2` in the Homebridge plugin
 search, install it, then fill in your credentials in the plugin settings screen.
 
 ### CLI
 
 ```
-npm install -g homebridge-airconditioner-mitsubishi-au-nz-2.0
+npm install -g homebridge-airconditioner-mitsubishi-au-nz-v2
 ```
 
 ## Configuration
