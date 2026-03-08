@@ -105,14 +105,46 @@ export class HeatCoolService extends AbstractService {
     }
 
     async setActive(value: CharacteristicValue) {
-        this.log.info('Setting', this.getDeviceName(), value === 0 ? 'OFF' : 'ON');
+        const c = this.platform.Characteristic;
+        const turningOn = value === c.Active.ACTIVE;
+        this.log.info('Setting', this.getDeviceName(), turningOn ? 'ON' : 'OFF');
         if (!this.platform.melviewService) {
             this.log.error('melviewService is not initialised — check credentials in config');
             return;
         }
         try {
-            await this.platform.melviewService.command(
-                new CommandPower(value, this.device, this.platform));
+            if (turningOn) {
+                const currentMode = this.device.state?.setmode;
+                const inferredTarget =
+                    currentMode === WorkMode.HEAT ? c.TargetHeaterCoolerState.HEAT :
+                        currentMode === WorkMode.COOL ? c.TargetHeaterCoolerState.COOL :
+                            currentMode === WorkMode.AUTO ? c.TargetHeaterCoolerState.AUTO :
+                                c.TargetHeaterCoolerState.AUTO;
+                const restoreTarget = this.accessory.context.lastMainTargetState ?? inferredTarget;
+
+                // Always restore/affirm a valid main-tile mode when turning on.
+                await this.platform.melviewService.command(
+                    new CommandPower(1, this.device, this.platform),
+                    new CommandTargetHeaterCoolerState(restoreTarget, this.device, this.platform),
+                );
+
+                // Optimistically reflect ON state immediately in HomeKit.
+                this.service.updateCharacteristic(c.Active, c.Active.ACTIVE);
+                this.service.updateCharacteristic(c.TargetHeaterCoolerState, restoreTarget);
+                const currentState = await this.getCurrentHeaterCoolerState(
+                    restoreTarget === c.TargetHeaterCoolerState.HEAT ? WorkMode.HEAT :
+                        restoreTarget === c.TargetHeaterCoolerState.COOL ? WorkMode.COOL :
+                            WorkMode.AUTO,
+                );
+                this.service.updateCharacteristic(c.CurrentHeaterCoolerState, currentState);
+            } else {
+                await this.platform.melviewService.command(
+                    new CommandPower(0, this.device, this.platform));
+
+                // Optimistically reflect OFF state immediately in HomeKit.
+                this.service.updateCharacteristic(c.Active, c.Active.INACTIVE);
+                this.service.updateCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.INACTIVE);
+            }
         } catch (e) {
             this.log.error('setActive command failed:', String(e));
             throw e; // re-throw so HomeKit knows the command failed
@@ -219,6 +251,7 @@ export class HeatCoolService extends AbstractService {
         this.platform.log.debug('setTargetHeaterCoolerState ->', value);
         await this.platform.melviewService?.command(
             new CommandTargetHeaterCoolerState(value, this.device, this.platform));
+        this.accessory.context.lastMainTargetState = value;
         const c = this.platform.Characteristic;
         switch (value) {
             case c.TargetHeaterCoolerState.COOL:

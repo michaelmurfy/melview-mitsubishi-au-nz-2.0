@@ -12,6 +12,7 @@ All units (standard):
 - **Mode** — Auto / Heat / Cool
 - **Target temperature** — Set independently for heating and cooling modes
 - **Current temperature** — Live room temperature readings
+- **Issue status** — Integrated on the main tile via `StatusFault` (fault or offline)
 - **Outdoor temperature** — Live outdoor unit temperature, exposed as a separate Temperature Sensor tile (optional, enable with `outdoorTemp: true`)
 - **Vertical airflow swing** — Enabled automatically on supported models (swing vs. fixed position)
 
@@ -20,7 +21,6 @@ Optional / model-dependent:
 - **Dry (dehumidifier) mode** — Exposed as a separate Dehumidifier accessory, with independent fan speed control
 - **Fan-only mode** — Exposed as a separate Fan accessory; circulates air without heating or cooling
 - **Horizontal airflow swing** — Exposed as a Switch accessory on models with a horizontal louvre motor
-- **Fault sensor** — Exposed as a Contact Sensor accessory when fault reporting is enabled
 
 ### Dual-path command delivery
 
@@ -75,8 +75,6 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on a separate Fan accessory (auto-added) |
 | `fanSpeedOnMainTile` | boolean | no | `false` | *(advanced)* Also show fan speed slider on the main AC tile (requires `fanSpeed: true`) |
 | `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
-| `showFaultSensor` | boolean | no | `false` | Add a Contact Sensor accessory for unit fault status |
-| `showHealthSensor` | boolean | no | `false` | Add a Contact Sensor accessory for unit health (offline or fault) |
 | `pollIntervalSeconds` | integer | no | `30` | State polling interval in seconds (range `5` to `300`) |
 | `perUnitOverrides` | array | no | — | Optional per-unit override objects keyed by `unitId` |
 
@@ -95,8 +93,6 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "fanSpeed": false,
       "fanSpeedOnMainTile": false,
       "outdoorTemp": false,
-      "showFaultSensor": false,
-      "showHealthSensor": false,
       "pollIntervalSeconds": 30,
       "perUnitOverrides": [
         {
@@ -125,7 +121,7 @@ The main service. Provides:
 - Current temperature
 - Heating threshold temperature
 - Cooling threshold temperature
-- Status fault (shows a fault when the unit reports an error or is offline)
+- Status fault (`StatusFault`) — shows an issue when the unit reports an error or is offline
 - Swing mode (vertical) — shown automatically on supported models
 
 ### Fan speed mapping
@@ -160,18 +156,8 @@ only registered when the Melview API returns a numeric value for that unit — i
 unit does not report outdoor temperature it is silently skipped even when the option
 is on.
 
-### Fault Sensor (`showFaultSensor: true`)
-
-When enabled, a **Contact Sensor** tile is added to represent fault state from the
-Melview payload:
-- **Detected / Open** → fault currently reported
-- **Not detected / Closed** → normal
-
-### Health Sensor (`showHealthSensor: true`)
-
-When enabled, a **Contact Sensor** tile is added for overall health:
-- **Detected / Open** → unhealthy (offline or fault)
-- **Not detected / Closed** → healthy
+Health/offline state is integrated into the main **Air Conditioner** tile via
+`StatusFault` instead of a separate health accessory tile.
 
 ### Dehumidifier / Dry mode (`dry: true`)
 
@@ -219,6 +205,15 @@ in the Home app without needing manual refresh.
 
 Use `perUnitOverrides` to apply different options per unit ID (for example, enabling
 fan speed only in one room, or polling one critical unit more frequently).
+
+Each override object supports these optional keys:
+- `dry`
+- `fanMode`
+- `airflowH`
+- `fanSpeed`
+- `fanSpeedOnMainTile`
+- `outdoorTemp`
+- `pollIntervalSeconds`
 
 ## Known Issues
 

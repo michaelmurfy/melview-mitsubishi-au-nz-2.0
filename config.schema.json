@@ -54,18 +54,6 @@
         "default": false,
         "description": "Adds a Temperature Sensor accessory showing the outdoor unit temperature (when reported by the unit)."
       },
-      "showFaultSensor": {
-        "title": "Enable Fault Sensor",
-        "type": "boolean",
-        "default": false,
-        "description": "Adds a Contact Sensor accessory that indicates when the unit reports a fault condition."
-      },
-      "showHealthSensor": {
-        "title": "Enable Health Sensor",
-        "type": "boolean",
-        "default": false,
-        "description": "Adds a Contact Sensor accessory that indicates unhealthy state (offline or fault)."
-      },
       "pollIntervalSeconds": {
         "title": "Polling Interval (seconds)",
         "type": "integer",
@@ -108,14 +96,6 @@
             },
             "outdoorTemp": {
               "title": "Enable Outdoor Temperature Sensor",
-              "type": "boolean"
-            },
-            "showFaultSensor": {
-              "title": "Enable Fault Sensor",
-              "type": "boolean"
-            },
-            "showHealthSensor": {
-              "title": "Enable Health Sensor",
               "type": "boolean"
             },
             "pollIntervalSeconds": {

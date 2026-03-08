@@ -7,8 +7,6 @@ import {DryService} from './services/dryService';
 import {FanModeService} from './services/fanModeService';
 import {HorizontalSwingService} from './services/horizontalSwingService';
 import {OutdoorTemperatureService} from './services/outdoorTemperatureService';
-import {FaultSensorService} from './services/faultSensorService';
-import {HealthSensorService} from './services/healthSensorService';
 
 interface EffectiveConfig {
   dry: boolean;
@@ -17,8 +15,6 @@ interface EffectiveConfig {
   fanSpeed: boolean;
   fanSpeedOnMainTile: boolean;
   outdoorTemp: boolean;
-  showFaultSensor: boolean;
-  showHealthSensor: boolean;
   pollIntervalSeconds: number;
 }
 
@@ -33,8 +29,6 @@ export class MelviewMitsubishiPlatformAccessory {
   private fanModeService?: FanModeService;
   private horizontalSwingService?: HorizontalSwingService;
   private outdoorTemperatureService?: OutdoorTemperatureService;
-  private faultSensorService?: FaultSensorService;
-  private healthSensorService?: HealthSensorService;
   private acService: HeatCoolService;
   private pollingInterval?: ReturnType<typeof setInterval>;
   constructor(
@@ -143,36 +137,20 @@ export class MelviewMitsubishiPlatformAccessory {
           }
         }
 
-        /*********************************************************
-         * Fault Sensor
-         *********************************************************/
-        if (this.effectiveConfig.showFaultSensor) {
-          this.faultSensorService = new FaultSensorService(this.platform, this.accessory);
-          this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [COMPLETED]');
-        } else {
-          const stale = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'fault-sensor');
-          if (stale) {
-            this.accessory.removeService(stale);
-            this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [REMOVED]');
-          } else {
-            this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [UNAVAILABLE]');
-          }
+        // Fault/health is represented on the main AC tile via StatusFault.
+        // Remove any stale dedicated fault sensor service from older versions.
+        const staleFault = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'fault-sensor');
+        if (staleFault) {
+          this.accessory.removeService(staleFault);
+          this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [REMOVED]');
         }
 
-        /*********************************************************
-         * Health Sensor (offline/fault)
-         *********************************************************/
-        if (this.effectiveConfig.showHealthSensor) {
-          this.healthSensorService = new HealthSensorService(this.platform, this.accessory);
-          this.platform.log.info('HEALTH SENSOR Capability:', device.room, ' [COMPLETED]');
-        } else {
-          const stale = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'health-sensor');
-          if (stale) {
-            this.accessory.removeService(stale);
-            this.platform.log.info('HEALTH SENSOR Capability:', device.room, ' [REMOVED]');
-          } else {
-            this.platform.log.info('HEALTH SENSOR Capability:', device.room, ' [UNAVAILABLE]');
-          }
+        // Health is represented on the main AC tile via StatusFault.
+        // Remove any stale dedicated health sensor service from older versions.
+        const staleHealth = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'health-sensor');
+        if (staleHealth) {
+          this.accessory.removeService(staleHealth);
+          this.platform.log.info('HEALTH SENSOR Capability:', device.room, ' [REMOVED]');
         }
 
 
@@ -218,8 +196,6 @@ export class MelviewMitsubishiPlatformAccessory {
       fanSpeed: this.resolveBoolean('fanSpeed', false, override),
       fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override),
       outdoorTemp: this.resolveBoolean('outdoorTemp', false, override),
-      showFaultSensor: this.resolveBoolean('showFaultSensor', false, override),
-      showHealthSensor: this.resolveBoolean('showHealthSensor', false, override),
       pollIntervalSeconds: this.resolveNumber('pollIntervalSeconds', 30, override),
     };
   }
