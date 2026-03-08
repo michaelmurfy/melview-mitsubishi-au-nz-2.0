@@ -44,12 +44,17 @@ export class DryService extends AbstractService {
 
     async setActive(value: CharacteristicValue) {
         this.log.info('Setting', this.getDeviceName(), '=', value === 0 ? 'OFF' : 'ON');
-        this.platform.melviewService?.command(
-            new CommandPower(value, this.device, this.platform),
-            new CommandTargetHumidifierDehumidifierState(
-                this.platform.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER,
-                this.device,
-                this.platform));
+        try {
+            await this.platform.melviewService?.command(
+                new CommandPower(value, this.device, this.platform),
+                new CommandTargetHumidifierDehumidifierState(
+                    this.platform.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER,
+                    this.device,
+                    this.platform));
+        } catch (e) {
+            this.log.error('setActive (Dry Mode) command failed:', String(e));
+            throw e;
+        }
     }
 
     protected getServiceType<T extends WithUUID<typeof Service>>(): T {
@@ -81,8 +86,13 @@ export class DryService extends AbstractService {
 
     async setTargetHumidifierDehumidifierState(value: CharacteristicValue) {
         this.log.info('Set ', this.device.room, '=', 'DRY');
-        this.platform.melviewService?.command(
-            new CommandTargetHumidifierDehumidifierState(value, this.device, this.platform));
+        try {
+            await this.platform.melviewService?.command(
+                new CommandTargetHumidifierDehumidifierState(value, this.device, this.platform));
+        } catch (e) {
+            this.log.error('setTargetHumidifierDehumidifierState command failed:', String(e));
+            throw e;
+        }
     }
 
     async getTargetHumidifierDehumidifierState(): Promise<CharacteristicValue> {

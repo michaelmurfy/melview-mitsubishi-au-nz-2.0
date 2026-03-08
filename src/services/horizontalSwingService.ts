@@ -47,8 +47,13 @@ export class HorizontalSwingService {
     this.platform.log.debug('setHorizontalSwing ->', value);
     // 0 = swing, 3 = centre fixed position
     const airdirh = value ? 0 : 3;
-    await this.platform.melviewService?.command(
-      new CommandAirDirectionH(airdirh, this.device, this.platform),
-    );
+    try {
+      await this.platform.melviewService?.command(
+        new CommandAirDirectionH(airdirh, this.device, this.platform),
+      );
+    } catch (e) {
+      this.platform.log.error('setOn (Horizontal Swing) command failed:', String(e));
+      throw e;
+    }
   }
 }

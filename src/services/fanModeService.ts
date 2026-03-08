@@ -69,15 +69,20 @@ export class FanModeService extends AbstractService {
   async setActive(value: CharacteristicValue) {
     const turningOn = this.isActiveOn(value);
     this.log.info('Setting', this.getDeviceName(), 'Fan Mode =', turningOn ? 'ON' : 'OFF');
-    if (turningOn) {
-      await this.platform.melviewService?.command(
-        new CommandPower(1, this.device, this.platform),
-        new CommandFanMode(WorkMode.FAN, this.device, this.platform),
-      );
-    } else {
-      await this.platform.melviewService?.command(
-        new CommandPower(0, this.device, this.platform),
-      );
+    try {
+      if (turningOn) {
+        await this.platform.melviewService?.command(
+          new CommandPower(1, this.device, this.platform),
+          new CommandFanMode(WorkMode.FAN, this.device, this.platform),
+        );
+      } else {
+        await this.platform.melviewService?.command(
+          new CommandPower(0, this.device, this.platform),
+        );
+      }
+    } catch (e) {
+      this.log.error('setActive (Fan Mode) command failed:', String(e));
+      throw e;
     }
   }
 
@@ -93,7 +98,12 @@ export class FanModeService extends AbstractService {
       return;
     }
     this.log.debug('RotationSpeed ->', value, '(stage', newStage, ')');
-    this.platform.melviewService?.command(
-      new CommandRotationSpeed(value, this.device, this.platform));
+    try {
+      await this.platform.melviewService?.command(
+        new CommandRotationSpeed(value, this.device, this.platform));
+    } catch (e) {
+      this.log.error('setRotationSpeed (Fan Mode) command failed:', String(e));
+      throw e;
+    }
   }
 }

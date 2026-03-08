@@ -158,8 +158,13 @@ export class HeatCoolService extends AbstractService {
             this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', maxVal);
             value = maxVal;
         }
-        this.platform.melviewService?.command(
-            new CommandTemperature(value, this.device, this.platform));
+        try {
+            await this.platform.melviewService?.command(
+                new CommandTemperature(value, this.device, this.platform));
+        } catch (e) {
+            this.log.error('setCoolingThresholdTemperature command failed:', String(e));
+            throw e;
+        }
     }
 
     async getCoolingThresholdTemperature(): Promise<CharacteristicValue> {
@@ -186,8 +191,13 @@ export class HeatCoolService extends AbstractService {
             value = maxVal;
         }
 
-        this.platform.melviewService?.command(
-            new CommandTemperature(value, this.device, this.platform));
+        try {
+            await this.platform.melviewService?.command(
+                new CommandTemperature(value, this.device, this.platform));
+        } catch (e) {
+            this.log.error('setHeatingThresholdTemperature command failed:', String(e));
+            throw e;
+        }
     }
 
     async getHeatingThresholdTemperature(): Promise<CharacteristicValue> {
@@ -249,20 +259,25 @@ export class HeatCoolService extends AbstractService {
 
     async setTargetHeaterCoolerState(value: CharacteristicValue) {
         this.platform.log.debug('setTargetHeaterCoolerState ->', value);
-        await this.platform.melviewService?.command(
-            new CommandTargetHeaterCoolerState(value, this.device, this.platform));
-        this.accessory.context.lastMainTargetState = value;
-        const c = this.platform.Characteristic;
-        switch (value) {
-            case c.TargetHeaterCoolerState.COOL:
-                this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.COOLING);
-                return;
-            case c.TargetHeaterCoolerState.HEAT:
-                this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.HEATING);
-                return;
-            case c.TargetHeaterCoolerState.AUTO:
-                const state = await this.getCurrentHeaterCoolerState(WorkMode.AUTO);
-                this.service.setCharacteristic(c.CurrentHeaterCoolerState, state);
+        try {
+            await this.platform.melviewService?.command(
+                new CommandTargetHeaterCoolerState(value, this.device, this.platform));
+            this.accessory.context.lastMainTargetState = value;
+            const c = this.platform.Characteristic;
+            switch (value) {
+                case c.TargetHeaterCoolerState.COOL:
+                    this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.COOLING);
+                    return;
+                case c.TargetHeaterCoolerState.HEAT:
+                    this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.HEATING);
+                    return;
+                case c.TargetHeaterCoolerState.AUTO:
+                    const state = await this.getCurrentHeaterCoolerState(WorkMode.AUTO);
+                    this.service.setCharacteristic(c.CurrentHeaterCoolerState, state);
+            }
+        } catch (e) {
+            this.log.error('setTargetHeaterCoolerState command failed:', String(e));
+            throw e;
         }
     }
 
@@ -299,8 +314,13 @@ export class HeatCoolService extends AbstractService {
         this.platform.log.debug('setSwingMode ->', value);
         // airdir 0 = swing, 1 = first fixed position (top)
         const airdir = value === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 0 : 1;
-        await this.platform.melviewService?.command(
-            new CommandAirDirection(airdir, this.device, this.platform));
+        try {
+            await this.platform.melviewService?.command(
+                new CommandAirDirection(airdir, this.device, this.platform));
+        } catch (e) {
+            this.log.error('setSwingMode command failed:', String(e));
+            throw e;
+        }
     }
 
     async getRotationSpeed(): Promise<CharacteristicValue> {
@@ -319,7 +339,12 @@ export class HeatCoolService extends AbstractService {
             return;
         }
         this.log.debug('RotationSpeed ->', value, '(stage', newStage, ')');
-        this.platform.melviewService?.command(
-            new CommandRotationSpeed(value, this.device, this.platform));
+        try {
+            await this.platform.melviewService?.command(
+                new CommandRotationSpeed(value, this.device, this.platform));
+        } catch (e) {
+            this.log.error('setRotationSpeed command failed:', String(e));
+            throw e;
+        }
     }
 }
