@@ -86,38 +86,31 @@ export class HeatCoolService extends AbstractService {
     }
 
     async getActive(): Promise<CharacteristicValue> {
-        if (this.device.state?.setmode === WorkMode.DRY ||
-        this.device.state?.setmode === WorkMode.FAN) {
+        const power = this.device.state?.power ?? -1;
+        const mode = this.device.state?.setmode ?? -1;
+        this.log.debug('getActive power=', power, 'mode=', mode);
+        if (mode === WorkMode.DRY || mode === WorkMode.FAN) {
             return this.platform.Characteristic.Active.INACTIVE;
         } else {
-            return this.device.state!.power === 0?
-                this.platform.Characteristic.Active.INACTIVE:
-                this.platform.Characteristic.Active.ACTIVE;
+            return power === 0
+                ? this.platform.Characteristic.Active.INACTIVE
+                : this.platform.Characteristic.Active.ACTIVE;
         }
     }
 
     async setActive(value: CharacteristicValue) {
-        await this.platform.melviewService?.command(
-            new CommandPower(value, this.device, this.platform));
-        // Default value
-        // let v = -1;
-        // switch (this.device.state?.setmode) {
-        //     case WorkMode.HEAT:
-        //         v = this.platform.Characteristic.TargetHeaterCoolerState.HEAT;
-        //         break;
-        //     case WorkMode.COOL:
-        //         v = this.platform.Characteristic.TargetHeaterCoolerState.COOL;
-        //         break;
-        //     case WorkMode.AUTO:
-        //         v = this.platform.Characteristic.TargetHeaterCoolerState.AUTO;
-        //         break;
-        // }
-        // if (v !== -1) {
-        //     this.log.info('Setting', this.getDeviceName(), '=', value===0?'OFF':'ON');
-        //     this.platform.melviewService?.command(
-        //         new CommandPower(value, this.device, this.platform),
-        //         new CommandTargetHeaterCoolerState(v, this.device, this.platform));
-        // }
+        this.log.info('Setting', this.getDeviceName(), value === 0 ? 'OFF' : 'ON');
+        if (!this.platform.melviewService) {
+            this.log.error('melviewService is not initialised — check credentials in config');
+            return;
+        }
+        try {
+            await this.platform.melviewService.command(
+                new CommandPower(value, this.device, this.platform));
+        } catch (e) {
+            this.log.error('setActive command failed:', String(e));
+            throw e; // re-throw so HomeKit knows the command failed
+        }
     }
 
     async setCoolingThresholdTemperature(value: CharacteristicValue) {

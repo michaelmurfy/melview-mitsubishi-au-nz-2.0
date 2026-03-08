@@ -41,6 +41,12 @@
         "type": "boolean",
         "default": false,
         "description": "Exposes a fan speed slider (Auto / Low / Medium / High) on the main AC tile and on the Fan-Only service. Disabled by default to prevent spurious commands on startup."
+      },
+      "outdoorTemp": {
+        "title": "Enable Outdoor Temperature Sensor",
+        "type": "boolean",
+        "default": false,
+        "description": "Adds a Temperature Sensor accessory showing the outdoor unit temperature (when reported by the unit)."
       }
     }
   }

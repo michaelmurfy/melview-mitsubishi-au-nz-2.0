@@ -106,8 +106,10 @@ export class MelviewMitsubishiPlatformAccessory {
         /*********************************************************
          * Outdoor Temperature Sensor
          *********************************************************/
-        if (device.state?.outdoortemp && !isNaN(parseFloat(device.state.outdoortemp))) {
+        if (this.platform.config.outdoorTemp &&
+            device.state?.outdoortemp && !isNaN(parseFloat(device.state.outdoortemp))) {
           this.outdoorTemperatureService = new OutdoorTemperatureService(this.platform, this.accessory);
+          this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [COMPLETED]');
         } else {
           const stale = this.accessory.getService(this.platform.Service.TemperatureSensor);
           if (stale) {

@@ -72,6 +72,7 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `fanMode` | boolean | no | `false` | Enable Fan accessory for fan-only mode |
 | `airflowH` | boolean | no | `false` | Enable Switch accessory for horizontal swing |
 | `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on the AC tile and Fan service |
+| `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
 
 ### Example `config.json`
 
@@ -85,7 +86,8 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "dry": true,
       "fanMode": true,
       "airflowH": false,
-      "fanSpeed": false
+      "fanSpeed": false,
+      "outdoorTemp": false
     }
   ]
 }
