@@ -41,7 +41,7 @@ is supported. Tested against:
 
 ## Requirements
 
-- [Homebridge](https://homebridge.io/) v1.3.0 or later
+- [Homebridge](https://homebridge.io/) v2.0.0 or later
 - Node.js 18.15.0 or later
 - An active Mitsubishi Wi-Fi Control account
 
@@ -49,13 +49,13 @@ is supported. Tested against:
 
 ### Homebridge UI (recommended)
 
-Search for `homebridge-airconditioner-mitsubishi-au-nz` in the Homebridge plugin
+Search for `homebridge-airconditioner-mitsubishi-au-nz-2.0` in the Homebridge plugin
 search, install it, then fill in your credentials in the plugin settings screen.
 
 ### CLI
 
 ```
-npm install -g homebridge-airconditioner-mitsubishi-au-nz
+npm install -g homebridge-airconditioner-mitsubishi-au-nz-2.0
 ```
 
 ## Configuration
