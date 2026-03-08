@@ -53,6 +53,20 @@
         "type": "boolean",
         "default": false,
         "description": "Adds a Temperature Sensor accessory showing the outdoor unit temperature (when reported by the unit)."
+      },
+      "showFaultSensor": {
+        "title": "Enable Fault Sensor",
+        "type": "boolean",
+        "default": false,
+        "description": "Adds a Contact Sensor accessory that indicates when the unit reports a fault condition."
+      },
+      "pollIntervalSeconds": {
+        "title": "Polling Interval (seconds)",
+        "type": "integer",
+        "default": 5,
+        "minimum": 5,
+        "maximum": 300,
+        "description": "How often to refresh each unit state from Melview. Lower values are more responsive but increase API traffic."
       }
     }
   }

@@ -7,6 +7,7 @@ import {DryService} from './services/dryService';
 import {FanModeService} from './services/fanModeService';
 import {HorizontalSwingService} from './services/horizontalSwingService';
 import {OutdoorTemperatureService} from './services/outdoorTemperatureService';
+import {FaultSensorService} from './services/faultSensorService';
 
 /**
  * Platform Accessory
@@ -18,6 +19,7 @@ export class MelviewMitsubishiPlatformAccessory {
   private fanModeService?: FanModeService;
   private horizontalSwingService?: HorizontalSwingService;
   private outdoorTemperatureService?: OutdoorTemperatureService;
+  private faultSensorService?: FaultSensorService;
   private acService: HeatCoolService;
   private pollingInterval?: ReturnType<typeof setInterval>;
   constructor(
@@ -122,11 +124,29 @@ export class MelviewMitsubishiPlatformAccessory {
           }
         }
 
+        /*********************************************************
+         * Fault Sensor
+         *********************************************************/
+        if (this.platform.config.showFaultSensor) {
+          this.faultSensorService = new FaultSensorService(this.platform, this.accessory);
+          this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [COMPLETED]');
+        } else {
+          const stale = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'fault-sensor');
+          if (stale) {
+            this.accessory.removeService(stale);
+            this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [REMOVED]');
+          } else {
+            this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [UNAVAILABLE]');
+          }
+        }
+
 
         /*********************************************************
          * Polling for state change
          *********************************************************/
 
+        const pollIntervalSeconds = this.getPollIntervalSeconds();
+        this.platform.log.info('Polling interval:', pollIntervalSeconds, 'seconds');
         this.pollingInterval = setInterval(() => {
           this.platform.melviewService?.getStatus(
             this.accessory.context.device.unitid)
@@ -139,7 +159,15 @@ export class MelviewMitsubishiPlatformAccessory {
               this.platform.log.error('Unable to find accessory status. Check the network');
               this.platform.log.debug(e);
             });
-        }, 5000);
+        }, pollIntervalSeconds * 1000);
+  }
+
+  private getPollIntervalSeconds(): number {
+    const raw = Number(this.platform.config.pollIntervalSeconds ?? 5);
+    if (Number.isNaN(raw)) {
+      return 5;
+    }
+    return Math.min(Math.max(Math.floor(raw), 5), 300);
   }
 
   public stopPolling() {

@@ -20,6 +20,7 @@ Optional / model-dependent:
 - **Dry (dehumidifier) mode** — Exposed as a separate Dehumidifier accessory, with independent fan speed control
 - **Fan-only mode** — Exposed as a separate Fan accessory; circulates air without heating or cooling
 - **Horizontal airflow swing** — Exposed as a Switch accessory on models with a horizontal louvre motor
+- **Fault sensor** — Exposed as a Contact Sensor accessory when fault reporting is enabled
 
 ### Dual-path command delivery
 
@@ -74,6 +75,8 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on a separate Fan accessory (auto-added) |
 | `fanSpeedOnMainTile` | boolean | no | `false` | *(advanced)* Also show fan speed slider on the main AC tile (requires `fanSpeed: true`) |
 | `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
+| `showFaultSensor` | boolean | no | `false` | Add a Contact Sensor accessory for unit fault status |
+| `pollIntervalSeconds` | integer | no | `5` | State polling interval in seconds (range `5` to `300`) |
 
 ### Example `config.json`
 
@@ -89,7 +92,9 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "airflowH": false,
       "fanSpeed": false,
       "fanSpeedOnMainTile": false,
-      "outdoorTemp": false
+      "outdoorTemp": false,
+      "showFaultSensor": false,
+      "pollIntervalSeconds": 5
     }
   ]
 }
@@ -143,6 +148,13 @@ only registered when the Melview API returns a numeric value for that unit — i
 unit does not report outdoor temperature it is silently skipped even when the option
 is on.
 
+### Fault Sensor (`showFaultSensor: true`)
+
+When enabled, a **Contact Sensor** tile is added to represent fault state from the
+Melview payload:
+- **Detected / Open** → fault currently reported
+- **Not detected / Closed** → normal
+
 ### Dehumidifier / Dry mode (`dry: true`)
 
 When enabled, a **Humidifier / Dehumidifier** accessory is added for units that report
@@ -181,8 +193,9 @@ When enabled and the unit reports `hasairdirh`, a **Switch** accessory is added:
 
 ## State polling
 
-The plugin polls each unit's status every **5 seconds** to keep temperature readings
-and mode indicators current in the Home app without needing manual refresh.
+The plugin polls each unit's status every **5 seconds** by default (configurable via
+`pollIntervalSeconds`, from 5 to 300) to keep readings and mode indicators current
+in the Home app without needing manual refresh.
 
 ## Known Issues
 
