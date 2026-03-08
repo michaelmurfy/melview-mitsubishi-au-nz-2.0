@@ -12,7 +12,7 @@ All units (standard):
 - **Mode** — Auto / Heat / Cool
 - **Target temperature** — Set independently for heating and cooling modes
 - **Current temperature** — Live room temperature readings
-- **Outdoor temperature** — Live outdoor unit temperature, exposed as a separate Temperature Sensor tile
+- **Outdoor temperature** — Live outdoor unit temperature, exposed as a separate Temperature Sensor tile (optional, enable with `outdoorTemp: true`)
 - **Fan speed** — Auto, Low, Medium-low, Medium, Medium-high, High (6 discrete stages mapped to 0–100%)
 - **Vertical airflow swing** — Enabled automatically on supported models (swing vs. fixed position)
 
@@ -134,12 +134,13 @@ toggle appears on the Heater/Cooler service automatically (no config needed):
 - **Swing enabled** → continuous up/down sweep
 - **Swing disabled** → fixed at top position
 
-### Outdoor Temperature Sensor (automatic)
+### Outdoor Temperature Sensor (`outdoorTemp: true`)
 
-When the Melview API returns a numeric `outdoortemp` value for a unit, a read-only
-**Temperature Sensor** accessory is automatically added alongside the main Heater/Cooler
-tile. No configuration is required. If the outdoor temperature is not available for
-your unit it is silently skipped.
+When enabled, a read-only **Temperature Sensor** tile is added alongside the main
+Heater/Cooler accessory showing the live outdoor unit temperature. The sensor is
+only registered when the Melview API returns a numeric value for that unit — if your
+unit does not report outdoor temperature it is silently skipped even when the option
+is on.
 
 ### Dehumidifier / Dry mode (`dry: true`)
 
