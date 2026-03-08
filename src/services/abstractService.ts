@@ -34,6 +34,13 @@ export abstract class AbstractService {
         this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed).props.maxValue = 100;
         this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed).props.minStep = 20;
 
+        // Pre-populate the current fan speed so HomeKit doesn't initialise to maxValue (100%)
+        // and inadvertently fire onSet with FS6 (turbo) on startup.
+        this.service.updateCharacteristic(
+            this.platform.Characteristic.RotationSpeed,
+            this.fanStageToPercent(this.device.state?.setfan ?? 0),
+        );
+
     }
 
     protected abstract getServiceType<T extends WithUUID<typeof Service>>() : T
@@ -53,27 +60,50 @@ export abstract class AbstractService {
     abstract getActive(): Promise<CharacteristicValue>;
 
     /**
-     * Reads the current fan stage from device state and maps to a HomeKit percentage.
-     * setfan: 0=auto → 0%, 1 → 20%, 2 → 40%, 3 → 60%, 5 → 80%, 6 → 100%
+     * Maps a Melview fan stage (0,1,2,3,5,6) to a HomeKit percentage (0–100 in steps of 20).
      */
-    async getRotationSpeed(): Promise<CharacteristicValue> {
-        const fan = this.device.state?.setfan ?? 0;
-        switch (fan) {
-            case 0: return 0;   // auto
+    protected fanStageToPercent(stage: number): number {
+        switch (stage) {
             case 1: return 20;
             case 2: return 40;
             case 3: return 60;
             case 5: return 80;
             case 6: return 100;
-            default: return 0;
+            default: return 0; // auto
         }
     }
 
     /**
-     * Maps a HomeKit percentage back to the device fan stage code and sends the command.
+     * Maps a HomeKit percentage back to a Melview fan stage code.
+     */
+    protected percentToFanStage(percent: number): number {
+        if (percent <= 0)  { return 0; }
+        if (percent <= 20) { return 1; }
+        if (percent <= 40) { return 2; }
+        if (percent <= 60) { return 3; }
+        if (percent <= 80) { return 5; }
+        return 6;
+    }
+
+    /**
+     * Reads the current fan stage from device state and maps to a HomeKit percentage.
+     */
+    async getRotationSpeed(): Promise<CharacteristicValue> {
+        return this.fanStageToPercent(this.device.state?.setfan ?? 0);
+    }
+
+    /**
+     * Maps a HomeKit percentage back to the device fan stage code and sends the command,
+     * but only if the fan stage has actually changed to avoid spurious commands on startup.
      */
     async setRotationSpeed(value: CharacteristicValue) {
-        this.log.debug('RotationSpeed ->', value);
+        const newStage = this.percentToFanStage(value as number);
+        const currentStage = this.device.state?.setfan ?? 0;
+        if (newStage === currentStage) {
+            this.log.debug('RotationSpeed unchanged (stage', currentStage, '), skipping command');
+            return;
+        }
+        this.log.debug('RotationSpeed ->', value, '(stage', newStage, ')');
         this.platform.melviewService?.command(
             new CommandRotationSpeed(value, this.device, this.platform));
     }
