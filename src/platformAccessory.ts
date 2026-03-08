@@ -13,16 +13,16 @@ import {HorizontalSwingService} from './services/horizontalSwingService';
  * Each accessory may expose multiple services of different service types.
  */
 export class MelviewMitsubishiPlatformAccessory {
-    private dryService?: DryService;
-    private fanModeService?: FanModeService;
-    private horizontalSwingService?: HorizontalSwingService;
-    private acService: HeatCoolService;
-    private pollingInterval?: ReturnType<typeof setInterval>;
-    constructor(
+  private dryService?: DryService;
+  private fanModeService?: FanModeService;
+  private horizontalSwingService?: HorizontalSwingService;
+  private acService: HeatCoolService;
+  private pollingInterval?: ReturnType<typeof setInterval>;
+  constructor(
         private readonly platform: MelviewMitsubishiHomebridgePlatform,
         private readonly accessory: PlatformAccessory,
-    ) {
-      const device: Unit = accessory.context.device;
+  ) {
+    const device: Unit = accessory.context.device;
         // set accessory information
         this.accessory.getService(this.platform.Service.AccessoryInformation)!
           .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Mitsubishi Electric')
@@ -87,12 +87,12 @@ export class MelviewMitsubishiPlatformAccessory {
               this.platform.log.debug(e);
             });
         }, 5000);
-    }
+  }
 
-    public stopPolling() {
-      if (this.pollingInterval) {
-        clearInterval(this.pollingInterval);
-        this.pollingInterval = undefined;
-      }
+  public stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
     }
+  }
 }

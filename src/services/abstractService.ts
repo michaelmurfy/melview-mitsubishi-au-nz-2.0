@@ -16,7 +16,8 @@ export abstract class AbstractService {
         }
         this.log.info("Set Device:", this.device.name)
         this.service = this.accessory.getService(this.getServiceType()) ||
-            this.accessory.addService(this.getServiceType());
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            this.accessory.addService(this.getServiceType() as any);
         this.service.setCharacteristic(this.platform.Characteristic.Name, this.device.name);
 
         this.service.getCharacteristic(this.platform.Characteristic.Active)

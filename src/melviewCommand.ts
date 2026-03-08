@@ -68,15 +68,16 @@ export class CommandTargetHumidifierDehumidifierState extends AbstractCommand {
 
 export class CommandRotationSpeed extends AbstractCommand {
   public execute(): string {
-    if (this.value === 0) {
+    const v = this.value as number;
+    if (v === 0) {
             this.device.state!.setfan = 0;
-    } else if (this.value <= 20) {
+    } else if (v <= 20) {
             this.device.state!.setfan = 1;
-    } else if (this.value <= 40) {
+    } else if (v <= 40) {
             this.device.state!.setfan = 2;
-    } else if (this.value <= 60) {
+    } else if (v <= 60) {
             this.device.state!.setfan = 3;
-    } else if (this.value <= 80) {
+    } else if (v <= 80) {
             this.device.state!.setfan = 5;
     } else {
             this.device.state!.setfan = 6;

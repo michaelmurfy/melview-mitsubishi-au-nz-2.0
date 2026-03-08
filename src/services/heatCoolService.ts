@@ -103,10 +103,10 @@ export class HeatCoolService extends AbstractService {
         this.platform.log.debug('setCoolingThresholdTemperature ->', value);
         const minVal = this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.minValue!;
         const maxVal = this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.maxValue!;
-        if (value! < minVal) {
+        if ((value as number) < minVal) {
             this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
             value = minVal;
-        } else if (value! > maxVal) {
+        } else if ((value as number) > maxVal) {
             this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', maxVal);
             value = maxVal;
         }
@@ -130,10 +130,10 @@ export class HeatCoolService extends AbstractService {
         this.platform.log.debug('setHeatingThresholdTemperature:', value);
         const minVal = this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minValue!;
         const maxVal = this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.maxValue!;
-        if (value! < minVal) {
+        if ((value as number) < minVal) {
             this.platform.log.warn('setHeatingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
             value = minVal;
-        } else if (value! > maxVal) {
+        } else if ((value as number) > maxVal) {
             this.platform.log.warn('setHeatingThresholdTemperature ->', value, 'is illegal - updating to', maxVal);
             value = maxVal;
         }
