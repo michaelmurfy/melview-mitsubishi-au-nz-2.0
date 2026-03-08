@@ -42,10 +42,14 @@ export class MelviewMitsubishiPlatformAccessory {
          * Dehumidifier Capability
          * https://developers.homebridge.io/#/service/HumidifierDehumidifier
          *********************************************************/
-        if (this.platform.config.dry) {
-          if (device.capabilities?.hasdrymode === 1) {
-            this.dryService = new DryService(this.platform, this.accessory);
-            this.platform.log.info('DRY Capability:', device.room, ' [COMPLETED]');
+        if (this.platform.config.dry && device.capabilities?.hasdrymode === 1) {
+          this.dryService = new DryService(this.platform, this.accessory);
+          this.platform.log.info('DRY Capability:', device.room, ' [COMPLETED]');
+        } else {
+          const stale = this.accessory.getService(this.platform.Service.HumidifierDehumidifier);
+          if (stale) {
+            this.accessory.removeService(stale);
+            this.platform.log.info('DRY Capability:', device.room, ' [REMOVED]');
           } else {
             this.platform.log.info('DRY Capability:', device.room, ' [UNAVAILABLE]');
           }
@@ -57,15 +61,25 @@ export class MelviewMitsubishiPlatformAccessory {
         if (this.platform.config.fanMode) {
           this.fanModeService = new FanModeService(this.platform, this.accessory);
           this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
+        } else {
+          const stale = this.accessory.getService(this.platform.Service.Fanv2);
+          if (stale) {
+            this.accessory.removeService(stale);
+            this.platform.log.info('FAN MODE Capability:', device.room, ' [REMOVED]');
+          }
         }
 
         /*********************************************************
          * Horizontal Airflow Swing Capability
          * https://developers.homebridge.io/#/service/Switch
          *********************************************************/
-        if (this.platform.config.airflowH) {
-          if (device.capabilities?.hasairdirh === 1) {
-            this.horizontalSwingService = new HorizontalSwingService(this.platform, this.accessory);
+        if (this.platform.config.airflowH && device.capabilities?.hasairdirh === 1) {
+          this.horizontalSwingService = new HorizontalSwingService(this.platform, this.accessory);
+        } else {
+          const stale = this.accessory.getService(this.platform.Service.Switch);
+          if (stale) {
+            this.accessory.removeService(stale);
+            this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [REMOVED]');
           } else {
             this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [UNAVAILABLE]');
           }
@@ -77,7 +91,13 @@ export class MelviewMitsubishiPlatformAccessory {
         if (device.state?.outdoortemp && !isNaN(parseFloat(device.state.outdoortemp))) {
           this.outdoorTemperatureService = new OutdoorTemperatureService(this.platform, this.accessory);
         } else {
-          this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [UNAVAILABLE]');
+          const stale = this.accessory.getService(this.platform.Service.TemperatureSensor);
+          if (stale) {
+            this.accessory.removeService(stale);
+            this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [REMOVED]');
+          } else {
+            this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [UNAVAILABLE]');
+          }
         }
 
 
