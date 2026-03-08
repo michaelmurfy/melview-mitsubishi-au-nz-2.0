@@ -63,7 +63,7 @@
       "pollIntervalSeconds": {
         "title": "Polling Interval (seconds)",
         "type": "integer",
-        "default": 5,
+        "default": 30,
         "minimum": 5,
         "maximum": 300,
         "description": "How often to refresh each unit state from Melview. Lower values are more responsive but increase API traffic."

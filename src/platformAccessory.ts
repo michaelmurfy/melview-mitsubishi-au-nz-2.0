@@ -163,9 +163,9 @@ export class MelviewMitsubishiPlatformAccessory {
   }
 
   private getPollIntervalSeconds(): number {
-    const raw = Number(this.platform.config.pollIntervalSeconds ?? 5);
+    const raw = Number(this.platform.config.pollIntervalSeconds ?? 30);
     if (Number.isNaN(raw)) {
-      return 5;
+      return 30;
     }
     return Math.min(Math.max(Math.floor(raw), 5), 300);
   }
