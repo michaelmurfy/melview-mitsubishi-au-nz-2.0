@@ -82,7 +82,6 @@ export class FanModeService extends AbstractService {
       }
     } catch (e) {
       this.log.error('setActive (Fan Mode) command failed:', String(e));
-      throw e;
     }
   }
 
@@ -103,7 +102,6 @@ export class FanModeService extends AbstractService {
         new CommandRotationSpeed(value, this.device, this.platform));
     } catch (e) {
       this.log.error('setRotationSpeed (Fan Mode) command failed:', String(e));
-      throw e;
     }
   }
 }

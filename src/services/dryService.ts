@@ -53,7 +53,6 @@ export class DryService extends AbstractService {
                     this.platform));
         } catch (e) {
             this.log.error('setActive (Dry Mode) command failed:', String(e));
-            throw e;
         }
     }
 
@@ -91,7 +90,6 @@ export class DryService extends AbstractService {
                 new CommandTargetHumidifierDehumidifierState(value, this.device, this.platform));
         } catch (e) {
             this.log.error('setTargetHumidifierDehumidifierState command failed:', String(e));
-            throw e;
         }
     }
 

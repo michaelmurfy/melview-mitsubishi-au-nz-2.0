@@ -44,6 +44,11 @@ export class HorizontalSwingService {
   }
 
   async setOn(value: CharacteristicValue) {
+    // Skip if unit is powered off - API rejects horizontal swing changes when off
+    if (this.device.state?.power === 0) {
+      this.platform.log.debug('setOn (Horizontal Swing) skipped - unit is powered off');
+      return;
+    }
     this.platform.log.debug('setHorizontalSwing ->', value);
     // 0 = swing, 3 = centre fixed position
     const airdirh = value ? 0 : 3;
@@ -53,7 +58,6 @@ export class HorizontalSwingService {
       );
     } catch (e) {
       this.platform.log.error('setOn (Horizontal Swing) command failed:', String(e));
-      throw e;
     }
   }
 }

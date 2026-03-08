@@ -143,7 +143,6 @@ export class HeatCoolService extends AbstractService {
             }
         } catch (e) {
             this.log.error('setActive command failed:', String(e));
-            throw e; // re-throw so HomeKit knows the command failed
         }
     }
 
@@ -163,7 +162,6 @@ export class HeatCoolService extends AbstractService {
                 new CommandTemperature(value, this.device, this.platform));
         } catch (e) {
             this.log.error('setCoolingThresholdTemperature command failed:', String(e));
-            throw e;
         }
     }
 
@@ -196,7 +194,6 @@ export class HeatCoolService extends AbstractService {
                 new CommandTemperature(value, this.device, this.platform));
         } catch (e) {
             this.log.error('setHeatingThresholdTemperature command failed:', String(e));
-            throw e;
         }
     }
 
@@ -277,7 +274,6 @@ export class HeatCoolService extends AbstractService {
             }
         } catch (e) {
             this.log.error('setTargetHeaterCoolerState command failed:', String(e));
-            throw e;
         }
     }
 
@@ -311,6 +307,11 @@ export class HeatCoolService extends AbstractService {
     }
 
     async setSwingMode(value: CharacteristicValue) {
+        // Skip if unit is powered off - API rejects swing mode changes when off
+        if (this.device.state?.power === 0) {
+            this.platform.log.debug('setSwingMode skipped - unit is powered off');
+            return;
+        }
         this.platform.log.debug('setSwingMode ->', value);
         // airdir 0 = swing, 1 = first fixed position (top)
         const airdir = value === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 0 : 1;
@@ -319,7 +320,6 @@ export class HeatCoolService extends AbstractService {
                 new CommandAirDirection(airdir, this.device, this.platform));
         } catch (e) {
             this.log.error('setSwingMode command failed:', String(e));
-            throw e;
         }
     }
 
@@ -344,7 +344,6 @@ export class HeatCoolService extends AbstractService {
                 new CommandRotationSpeed(value, this.device, this.platform));
         } catch (e) {
             this.log.error('setRotationSpeed command failed:', String(e));
-            throw e;
         }
     }
 }
