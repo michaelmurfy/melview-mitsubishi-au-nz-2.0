@@ -42,8 +42,8 @@ is supported. Tested against:
 
 ## Requirements
 
-- [Homebridge](https://homebridge.io/) v2.0.0 or later
-- Node.js 18.15.0 or later
+- [Homebridge](https://homebridge.io/) v1.6.0 or later (v2.0.0 supported)
+- Node.js ^18.20.4 or ^20.15.1 or ^22
 - An active Mitsubishi Wi-Fi Control account
 
 ## Installation
