@@ -25,7 +25,6 @@ export class OutdoorTemperatureService {
       this.accessory.addService(this.platform.Service.TemperatureSensor as any, name, 'outdoor-temperature');
 
     this.service.setCharacteristic(this.platform.Characteristic.Name, name);
-    this.service.setCharacteristic(this.platform.Characteristic.ConfiguredName, name);
 
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minValue = -50;
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.maxValue = 70;
