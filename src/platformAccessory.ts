@@ -38,9 +38,9 @@ export class MelviewMitsubishiPlatformAccessory {
         this.acService = new HeatCoolService(this.platform, this.accessory);
         this.platform.log.info('HEAT/COOL Capability:', device.room, ' [COMPLETED]');
 
-        // Remove any cached RotationSpeed on the HeaterCooler service when fan
-        // speed control is disabled (prevents stale characteristic from a prior config).
-        if (!this.platform.config.fanSpeed) {
+        // Remove any cached RotationSpeed on the HeaterCooler service unless
+        // explicitly enabled via fanSpeed + fanSpeedOnMainTile.
+        if (!(this.platform.config.fanSpeed && this.platform.config.fanSpeedOnMainTile)) {
           if (this.acService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
             const staleRs = this.acService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
             this.acService.getService().removeCharacteristic(staleRs);

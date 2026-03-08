@@ -13,10 +13,10 @@ All units (standard):
 - **Target temperature** — Set independently for heating and cooling modes
 - **Current temperature** — Live room temperature readings
 - **Outdoor temperature** — Live outdoor unit temperature, exposed as a separate Temperature Sensor tile (optional, enable with `outdoorTemp: true`)
-- **Fan speed** — Auto, Low, Medium-low, Medium, Medium-high, High (6 discrete stages mapped to 0–100%)
 - **Vertical airflow swing** — Enabled automatically on supported models (swing vs. fixed position)
 
 Optional / model-dependent:
+- **Fan speed** — Auto, Low, Medium-low, Medium, Medium-high, High (6 discrete stages mapped to 0–100%)
 - **Dry (dehumidifier) mode** — Exposed as a separate Dehumidifier accessory, with independent fan speed control
 - **Fan-only mode** — Exposed as a separate Fan accessory; circulates air without heating or cooling
 - **Horizontal airflow swing** — Exposed as a Switch accessory on models with a horizontal louvre motor
@@ -71,7 +71,8 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `dry` | boolean | no | `false` | Enable Dehumidifier accessory for dry mode |
 | `fanMode` | boolean | no | `false` | Enable Fan accessory for fan-only mode |
 | `airflowH` | boolean | no | `false` | Enable Switch accessory for horizontal swing |
-| `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on the AC tile and Fan service |
+| `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on the Fan accessory |
+| `fanSpeedOnMainTile` | boolean | no | `false` | *(advanced)* Also show fan speed slider on the main AC tile (requires `fanSpeed: true`) |
 | `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
 
 ### Example `config.json`
@@ -87,6 +88,7 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "fanMode": true,
       "airflowH": false,
       "fanSpeed": false,
+      "fanSpeedOnMainTile": false,
       "outdoorTemp": false
     }
   ]
@@ -107,7 +109,6 @@ The main service. Provides:
 - Current temperature
 - Heating threshold temperature
 - Cooling threshold temperature
-- Fan speed (rotation speed) — see table below
 - Swing mode (vertical) — shown automatically on supported models
 
 ### Fan speed mapping
@@ -159,7 +160,11 @@ mode (circulates air, no temperature conditioning).
 ### Fan speed control (`fanSpeed: true`, experimental)
 
 Disabled by default. When enabled, a fan speed slider (Auto / Low / Medium / High)
-appears on both the main **Air Conditioner** tile and the optional **Fan** service.
+appears on the optional **Fan** service (`fanMode: true`).
+
+To also show fan speed on the main **Air Conditioner** tile, set:
+- `fanSpeed: true`
+- `fanSpeedOnMainTile: true`
 
 > **Note:** Due to the way HomeKit caches characteristic values, enabling fan speed
 > can cause the unit to briefly jump to a high fan stage on startup. The plugin

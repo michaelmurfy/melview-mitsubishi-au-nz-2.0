@@ -40,7 +40,13 @@
         "title": "Enable Fan Speed Control (experimental)",
         "type": "boolean",
         "default": false,
-        "description": "Exposes a fan speed slider (Auto / Low / Medium / High) on the main AC tile and on the Fan-Only service. Disabled by default to prevent spurious commands on startup."
+        "description": "Exposes a fan speed slider (Auto / Low / Medium / High) on the Fan-Only service. Disabled by default to prevent spurious commands on startup."
+      },
+      "fanSpeedOnMainTile": {
+        "title": "Show Fan Speed on Main AC Tile (advanced)",
+        "type": "boolean",
+        "default": false,
+        "description": "When fanSpeed is enabled, also exposes fan speed on the main Air Conditioner tile. Leave disabled for best reliability."
       },
       "outdoorTemp": {
         "title": "Enable Outdoor Temperature Sensor",

@@ -54,8 +54,9 @@ export class HeatCoolService extends AbstractService {
                 .onGet(this.getSwingMode.bind(this));
         }
 
-        // Fan Speed Control — optional, gated by config.fanSpeed (default off)
-        if (this.platform.config.fanSpeed) {
+        // Fan Speed Control on main AC tile — optional, disabled by default.
+        // Requires fanSpeed=true and fanSpeedOnMainTile=true.
+        if (this.platform.config.fanSpeed && this.platform.config.fanSpeedOnMainTile) {
             this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
             const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
             rs.props.minValue = 0;
