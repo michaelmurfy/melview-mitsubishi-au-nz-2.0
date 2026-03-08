@@ -6,6 +6,8 @@ import {CommandRotationSpeed} from "../melviewCommand";
 export abstract class AbstractService {
     protected service: Service;
     public readonly device: Unit;
+    private startupComplete = false;
+
     protected constructor(
         protected readonly platform: MelviewMitsubishiHomebridgePlatform,
         protected readonly accessory: PlatformAccessory
@@ -24,23 +26,27 @@ export abstract class AbstractService {
             .onSet(this.setActive.bind(this))
             .onGet(this.getActive.bind(this));
 
-        this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed)
-            .onSet(this.setRotationSpeed.bind(this))
-            .onGet(this.getRotationSpeed.bind(this));
-
-        // Fan has 5 discrete physical stages (auto/1-4/turbo) mapped to 0/20/40/60/80/100%.
-        // minStep of 20 snaps the HomeKit slider to valid positions.
+        // Set props BEFORE registering the handler and pre-populating, so HAP
+        // never has a value outside the valid stepped range.
         this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed).props.minValue = 0;
         this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed).props.maxValue = 100;
         this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed).props.minStep = 20;
 
-        // Pre-populate the current fan speed so HomeKit doesn't initialise to maxValue (100%)
-        // and inadvertently fire onSet with FS6 (turbo) on startup.
+        // Pre-populate BEFORE registering onSet so HAP cache is correct before
+        // any HomeKit controller reconnects and pushes its stale cached value.
         this.service.updateCharacteristic(
             this.platform.Characteristic.RotationSpeed,
             this.fanStageToPercent(this.device.state?.setfan ?? 0),
         );
 
+        this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed)
+            .onSet(this.setRotationSpeed.bind(this))
+            .onGet(this.getRotationSpeed.bind(this));
+
+        // Allow a 5-second window after startup before honouring onSet for
+        // RotationSpeed. HomeKit controllers can push stale cached values back
+        // to the bridge when they reconnect, causing spurious fan commands.
+        setTimeout(() => { this.startupComplete = true; }, 5000);
     }
 
     protected abstract getServiceType<T extends WithUUID<typeof Service>>() : T
@@ -93,10 +99,15 @@ export abstract class AbstractService {
     }
 
     /**
-     * Maps a HomeKit percentage back to the device fan stage code and sends the command,
-     * but only if the fan stage has actually changed to avoid spurious commands on startup.
+     * Maps a HomeKit percentage back to the device fan stage code and sends the command.
+     * Ignores calls during the startup window to prevent HomeKit reconnect-pushes
+     * from sending spurious fan commands to the unit.
      */
     async setRotationSpeed(value: CharacteristicValue) {
+        if (!this.startupComplete) {
+            this.log.debug('RotationSpeed onSet ignored during startup window (value:', value, ')');
+            return;
+        }
         const newStage = this.percentToFanStage(value as number);
         const currentStage = this.device.state?.setfan ?? 0;
         if (newStage === currentStage) {
