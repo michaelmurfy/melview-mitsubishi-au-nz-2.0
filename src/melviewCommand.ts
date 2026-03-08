@@ -33,8 +33,10 @@ export abstract class AbstractCommand implements Command{
 
 export class CommandPower extends AbstractCommand {
   public execute(): string {
-        this.device.state!.power = this.value as number;
-        return 'PW' + this.value;
+    const requestedOn = this.value === 1 || this.value === true || this.value === '1';
+    const power = requestedOn ? 1 : 0;
+    this.device.state!.power = power;
+    return 'PW' + power;
   }
 }
 

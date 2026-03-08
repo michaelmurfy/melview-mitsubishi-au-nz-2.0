@@ -67,8 +67,10 @@ export class FanModeService extends AbstractService {
   }
 
   async setActive(value: CharacteristicValue) {
-    this.log.info('Setting', this.getDeviceName(), 'Fan Mode =', value === 0 ? 'OFF' : 'ON');
-    if (value === this.platform.Characteristic.Active.ACTIVE) {
+    const turningOn =
+      value === this.platform.Characteristic.Active.ACTIVE || value === true || value === '1';
+    this.log.info('Setting', this.getDeviceName(), 'Fan Mode =', turningOn ? 'ON' : 'OFF');
+    if (turningOn) {
       await this.platform.melviewService?.command(
         new CommandPower(1, this.device, this.platform),
         new CommandFanMode(WorkMode.FAN, this.device, this.platform),
