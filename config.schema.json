@@ -28,7 +28,7 @@
         "title": "Enable Fan-Only Mode",
         "type": "boolean",
         "default": false,
-        "description": "Adds a Fan service that lets you run the unit in fan-only mode without heating or cooling."
+        "description": "Adds a Fan service that lets you run the unit in fan-only mode without heating or cooling. This service is also added automatically when fanSpeed is enabled."
       },
       "airflowH": {
         "title": "Enable Horizontal Airflow Swing",
@@ -40,7 +40,7 @@
         "title": "Enable Fan Speed Control (experimental)",
         "type": "boolean",
         "default": false,
-        "description": "Exposes a fan speed slider (Auto / Low / Medium / High) on the Fan-Only service. Disabled by default to prevent spurious commands on startup."
+        "description": "Exposes a fan speed slider (Auto / Low / Medium / High) on a separate Fan service (added automatically) and keeps the main AC tile cleaner by default."
       },
       "fanSpeedOnMainTile": {
         "title": "Show Fan Speed on Main AC Tile (advanced)",

@@ -66,9 +66,9 @@ export class MelviewMitsubishiPlatformAccessory {
         }
 
         /*********************************************************
-         * Fan-Only Mode Capability
+         * Fan-Only Mode / Fan Speed Capability
          *********************************************************/
-        if (this.platform.config.fanMode) {
+        if (this.platform.config.fanMode || this.platform.config.fanSpeed) {
           this.fanModeService = new FanModeService(this.platform, this.accessory);
           this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
           // Remove any cached RotationSpeed on the Fanv2 service when fan speed is disabled.
@@ -78,6 +78,8 @@ export class MelviewMitsubishiPlatformAccessory {
               this.fanModeService.getService().removeCharacteristic(staleRs);
               this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [REMOVED]');
             }
+          } else {
+            this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [COMPLETED]');
           }
         } else {
           const stale = this.accessory.getService(this.platform.Service.Fanv2);
