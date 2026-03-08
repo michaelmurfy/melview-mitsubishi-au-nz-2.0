@@ -127,9 +127,20 @@ export class MelviewService {
       headers: this.populateHeaders(),
       body: req,
     });
+    if (!response || response.status !== 200) {
+      throw new Error('Command request failed with HTTP status ' + (response?.status ?? 'unknown'));
+    }
     const body = await response.text();
-    const rBody = JSON.parse(body) as CommandResponse;
-    if (rBody.error === 'ok' && rBody.lc && rBody.lc.length > 0) {
+    let rBody: CommandResponse;
+    try {
+      rBody = JSON.parse(body) as CommandResponse;
+    } catch (e) {
+      throw new Error('Failed to parse command response: ' + String(e));
+    }
+    if (rBody.error !== 'ok') {
+      throw new Error('Command rejected by Melview API: ' + (rBody.error || 'unknown error'));
+    }
+    if (rBody.lc && rBody.lc.length > 0) {
       const xmlBody = command.getLocalCommandBody(rBody.lc);
       fetch(command.getLocalCommandURL(), {
         method: 'POST',

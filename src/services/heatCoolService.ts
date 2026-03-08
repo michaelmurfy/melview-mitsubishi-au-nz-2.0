@@ -102,7 +102,7 @@ export class HeatCoolService extends AbstractService {
 
     async setActive(value: CharacteristicValue) {
         const c = this.platform.Characteristic;
-        const turningOn = value === c.Active.ACTIVE || value === true || value === '1';
+        const turningOn = this.isActiveOn(value);
         this.log.info('Setting', this.getDeviceName(), turningOn ? 'ON' : 'OFF');
         if (!this.platform.melviewService) {
             this.log.error('melviewService is not initialised — check credentials in config');
@@ -207,6 +207,10 @@ export class HeatCoolService extends AbstractService {
             mode = this.device.state!.setmode;
         }
         const c = this.platform.api.hap.Characteristic;
+        if (this.device.state?.power === 0) {
+            this.platform.log.debug('getCurrentHeaterCoolerState: INACTIVE (power off)');
+            return c.CurrentHeaterCoolerState.INACTIVE;
+        }
         const roomTemp = parseFloat(this.device.state!.roomtemp);
         const targTemp = parseFloat(this.device.state!.settemp);
         switch (mode) {

@@ -67,6 +67,13 @@ export abstract class AbstractService {
         return 6;
     }
 
+    /**
+     * Normalizes HomeKit Active values across number/boolean/string variants.
+     */
+    protected isActiveOn(value: CharacteristicValue): boolean {
+        return value === this.platform.Characteristic.Active.ACTIVE || value === true || value === '1';
+    }
+
     protected get log () : Logger {
         return this.platform.log;
     }

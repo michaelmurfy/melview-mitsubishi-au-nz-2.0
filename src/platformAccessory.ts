@@ -159,7 +159,8 @@ export class MelviewMitsubishiPlatformAccessory {
          *********************************************************/
 
         const pollIntervalSeconds = this.getPollIntervalSeconds();
-        this.platform.log.info('Polling interval:', pollIntervalSeconds, 'seconds');
+        const pollIntervalMs = this.getJitteredIntervalMs(pollIntervalSeconds * 1000);
+        this.platform.log.info('Polling interval:', pollIntervalSeconds, 'seconds (jittered to', pollIntervalMs, 'ms)');
         this.pollingInterval = setInterval(() => {
           this.platform.melviewService?.getStatus(
             this.accessory.context.device.unitid)
@@ -176,7 +177,7 @@ export class MelviewMitsubishiPlatformAccessory {
               this.platform.log.debug(e);
               this.updateMainStatusFault();
             });
-        }, pollIntervalSeconds * 1000);
+        }, pollIntervalMs);
   }
 
   private getPollIntervalSeconds(): number {
@@ -185,6 +186,12 @@ export class MelviewMitsubishiPlatformAccessory {
       return 30;
     }
     return Math.min(Math.max(Math.floor(raw), 5), 300);
+  }
+
+  private getJitteredIntervalMs(baseIntervalMs: number): number {
+    const jitterMaxMs = Math.max(250, Math.floor(baseIntervalMs * 0.1));
+    const jitterMs = Math.floor(Math.random() * jitterMaxMs);
+    return baseIntervalMs + jitterMs;
   }
 
   private resolveEffectiveConfig(unitId: string): EffectiveConfig {
