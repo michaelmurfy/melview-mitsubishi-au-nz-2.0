@@ -1,13 +1,11 @@
 import {MelviewMitsubishiHomebridgePlatform} from "../platform";
-import {CharacteristicValue, PlatformAccessory, Service} from "homebridge";
+import {CharacteristicValue, PlatformAccessory, Service, WithUUID} from "homebridge";
 import {WorkMode} from "../data";
 import {AbstractService} from "./abstractService";
 import {
-    CommandPower, CommandRotationSpeed,
-    CommandTargetHeaterCoolerState,
+    CommandPower,
     CommandTargetHumidifierDehumidifierState
 } from "../melviewCommand";
-import {WithUUID} from "hap-nodejs";
 
 export class DryService extends AbstractService {
     public constructor(
@@ -89,29 +87,5 @@ export class DryService extends AbstractService {
 
     async getTargetHumidifierDehumidifierState(): Promise<CharacteristicValue> {
         return this.characterisitc.TargetHumidifierDehumidifierState.DEHUMIDIFIER;
-    }
-
-    async setRotationSpeed(value: CharacteristicValue) {
-        this.platform.log.debug('RotationSpeed ->', value);
-        this.platform.melviewService?.command(
-            new CommandRotationSpeed(value, this.device, this.platform));
-    }
-
-    async getRotationSpeed(): Promise<CharacteristicValue> {
-        const fan = this.device.state!.setfan;
-        switch (fan) {
-            case 1:
-                return 20;
-            case 2:
-                return 40;
-            case 3:
-                return 60;
-            case 5:
-                return 80;
-            case 6:
-                return 100;
-            default:
-                return 20;
-        }
     }
 }

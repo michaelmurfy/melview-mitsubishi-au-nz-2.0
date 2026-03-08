@@ -1,14 +1,13 @@
 import {MelviewMitsubishiHomebridgePlatform} from "../platform";
-import {CharacteristicValue, PlatformAccessory, Service} from "homebridge";
+import {CharacteristicValue, PlatformAccessory, Service, WithUUID} from "homebridge";
 import {WorkMode} from "../data";
 import {AbstractService} from "./abstractService";
 import {
     CommandPower,
-    CommandRotationSpeed,
     CommandTargetHeaterCoolerState,
-    CommandTemperature
+    CommandTemperature,
+    CommandAirDirection,
 } from "../melviewCommand";
-import {WithUUID} from "hap-nodejs";
 
 export class HeatCoolService extends AbstractService {
     constructor(
@@ -44,6 +43,13 @@ export class HeatCoolService extends AbstractService {
         this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minValue = heat.min;
         this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.maxValue = heat.max;
         this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minStep = 0.5;
+
+        // Vertical airflow direction / swing — only on supported models
+        if (this.device.capabilities?.hasswing === 1 || this.device.capabilities?.hasairdir === 1) {
+            this.service.getCharacteristic(this.platform.Characteristic.SwingMode)
+                .onSet(this.setSwingMode.bind(this))
+                .onGet(this.getSwingMode.bind(this));
+        }
     }
 
     protected getServiceType<T extends WithUUID<typeof Service>>() : T {
@@ -229,27 +235,18 @@ export class HeatCoolService extends AbstractService {
         return parseFloat(this.device.state!.roomtemp);
     }
 
-    async setRotationSpeed(value: CharacteristicValue) {
-        this.platform.log.debug('RotationSpeed ->', value);
-        this.platform.melviewService?.command(
-            new CommandRotationSpeed(value, this.device, this.platform));
+    async getSwingMode(): Promise<CharacteristicValue> {
+        const airdir = this.device.state?.airdir ?? 1;
+        return airdir === 0
+            ? this.platform.Characteristic.SwingMode.SWING_ENABLED
+            : this.platform.Characteristic.SwingMode.SWING_DISABLED;
     }
 
-    async getRotationSpeed(): Promise<CharacteristicValue> {
-        const fan = this.device.state!.setfan;
-        switch (fan) {
-            case 1:
-                return 20;
-            case 2:
-                return 40;
-            case 3:
-                return 60;
-            case 5:
-                return 80;
-            case 6:
-                return 100;
-            default:
-                return 20;
-        }
+    async setSwingMode(value: CharacteristicValue) {
+        this.platform.log.debug('setSwingMode ->', value);
+        // airdir 0 = swing, 1 = first fixed position (top)
+        const airdir = value === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 0 : 1;
+        await this.platform.melviewService?.command(
+            new CommandAirDirection(airdir, this.device, this.platform));
     }
 }

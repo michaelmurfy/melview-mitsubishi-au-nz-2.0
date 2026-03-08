@@ -22,7 +22,19 @@
         "title": "Enable Dry Mode (experimental)",
         "type": "boolean",
         "default": false,
-        "description": "Dry mode is still in development and is subject to bugs."
+        "description": "Adds a Dehumidifier service for units that support dry mode."
+      },
+      "fanMode": {
+        "title": "Enable Fan-Only Mode",
+        "type": "boolean",
+        "default": false,
+        "description": "Adds a Fan service that lets you run the unit in fan-only mode without heating or cooling."
+      },
+      "airflowH": {
+        "title": "Enable Horizontal Airflow Swing",
+        "type": "boolean",
+        "default": false,
+        "description": "Adds a Switch service for horizontal airflow direction on supported models (ON = sweep, OFF = centre). Vertical swing is always enabled automatically on supported models."
       }
     }
   }

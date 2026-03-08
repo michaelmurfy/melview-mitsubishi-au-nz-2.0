@@ -1,6 +1,5 @@
 import {
   API,
-  Categories,
   Characteristic,
   DynamicPlatformPlugin,
   Logger,
@@ -106,7 +105,7 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
               device.state = s;
               // create a new accessory
               //this.api.registerPlatformAccessories()
-              const accessory = new this.api.platformAccessory(device.room, uuid, Categories.AIR_CONDITIONER);
+              const accessory = new this.api.platformAccessory(device.room, uuid, this.api.hap.Categories.AIR_CONDITIONER);
 
               // store a copy of the device object in the `accessory.context`
               // the `context` property can be used to store any data about the accessory you may need

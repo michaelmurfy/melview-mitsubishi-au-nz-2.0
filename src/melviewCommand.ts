@@ -91,3 +91,35 @@ export class CommandTemperature extends AbstractCommand {
         return 'TS' + this.device.state!.settemp;
   }
 }
+
+/**
+ * Vertical airflow direction.
+ * value 0 = swing, 1-5 = fixed positions (top to bottom), 7 = auto
+ */
+export class CommandAirDirection extends AbstractCommand {
+  public execute(): string {
+        this.device.state!.airdir = this.value as number;
+        return 'AD' + this.value;
+  }
+}
+
+/**
+ * Horizontal airflow direction.
+ * value 0 = swing, 1-5 = fixed positions, 7 = auto
+ */
+export class CommandAirDirectionH extends AbstractCommand {
+  public execute(): string {
+        this.device.state!.airdirh = this.value as number;
+        return 'AH' + this.value;
+  }
+}
+
+/**
+ * Switch the unit into fan-only mode (WorkMode.FAN = 7).
+ */
+export class CommandFanMode extends AbstractCommand {
+  public execute(): string {
+        this.device.state!.setmode = WorkMode.FAN;
+        return 'MD' + WorkMode.FAN;
+  }
+}

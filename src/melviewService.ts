@@ -1,5 +1,4 @@
 import {API, Logger, PlatformConfig} from 'homebridge';
-import fetch, {Response} from 'node-fetch';
 import {Cookie} from 'tough-cookie';
 import {Account, Building, Capabilities, CommandResponse, State} from './data';
 import {Command} from './melviewCommand';
@@ -66,9 +65,8 @@ export class MelviewService {
       }
 
       if (this.authWillExpire()) {
-        this.login().catch(e => {
+        await this.login().catch(e => {
           this.log.error(e);
-          return;
         });
       }
 
@@ -87,9 +85,8 @@ export class MelviewService {
      */
     public async capabilities(unitID: string): Promise<Capabilities> {
       if (this.authWillExpire()) {
-        this.login().catch(e => {
+        await this.login().catch(e => {
           this.log.error(e);
-          return;
         });
       }
 
@@ -113,9 +110,8 @@ export class MelviewService {
     public async command(command : Command, ...commandChain: Command[]) {
       const allComms = [command, ...commandChain].map(c => c.execute()).join(',');
       if (this.authWillExpire()) {
-        this.login().catch(e => {
+        await this.login().catch(e => {
           this.log.error(e);
-          return;
         });
       }
 
@@ -154,9 +150,8 @@ export class MelviewService {
      */
     public async getStatus(unitID: string): Promise<State> {
       if (this.authWillExpire()) {
-        this.login().catch(e => {
+        await this.login().catch(e => {
           this.log.error(e);
-          return;
         });
       }
 
@@ -171,9 +166,10 @@ export class MelviewService {
       return JSON.parse(body) as State;
     }
 
-    private extractCookie(response: Response) {
-      const raw = JSON.stringify(response.headers.raw()['set-cookie']);
-      this.auth = Cookie.parse(raw) as Cookie;
+    private extractCookie(response: globalThis.Response) {
+      const setCookieHeaders = response.headers.getSetCookie();
+      const raw = setCookieHeaders[0] ?? '';
+      this.auth = Cookie.parse(raw) ?? undefined;
     }
 
     // private async debugResponse(method: string, response: Response): Promise<string> {

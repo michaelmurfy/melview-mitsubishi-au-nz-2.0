@@ -4,6 +4,8 @@ import {MelviewMitsubishiHomebridgePlatform} from './platform';
 import {Unit} from './data';
 import {HeatCoolService} from './services/heatCoolService';
 import {DryService} from './services/dryService';
+import {FanModeService} from './services/fanModeService';
+import {HorizontalSwingService} from './services/horizontalSwingService';
 
 /**
  * Platform Accessory
@@ -12,7 +14,10 @@ import {DryService} from './services/dryService';
  */
 export class MelviewMitsubishiPlatformAccessory {
     private dryService?: DryService;
+    private fanModeService?: FanModeService;
+    private horizontalSwingService?: HorizontalSwingService;
     private acService: HeatCoolService;
+    private pollingInterval?: ReturnType<typeof setInterval>;
     constructor(
         private readonly platform: MelviewMitsubishiHomebridgePlatform,
         private readonly accessory: PlatformAccessory,
@@ -35,7 +40,7 @@ export class MelviewMitsubishiPlatformAccessory {
          * Dehumidifier Capability
          * https://developers.homebridge.io/#/service/HumidifierDehumidifier
          *********************************************************/
-        if (accessory.context.dry) {
+        if (this.platform.config.dry) {
           if (device.capabilities?.hasdrymode === 1) {
             this.dryService = new DryService(this.platform, this.accessory);
             this.platform.log.info('DRY Capability:', device.room, ' [COMPLETED]');
@@ -44,12 +49,32 @@ export class MelviewMitsubishiPlatformAccessory {
           }
         }
 
+        /*********************************************************
+         * Fan-Only Mode Capability
+         *********************************************************/
+        if (this.platform.config.fanMode) {
+          this.fanModeService = new FanModeService(this.platform, this.accessory);
+          this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
+        }
+
+        /*********************************************************
+         * Horizontal Airflow Swing Capability
+         * https://developers.homebridge.io/#/service/Switch
+         *********************************************************/
+        if (this.platform.config.airflowH) {
+          if (device.capabilities?.hasairdirh === 1) {
+            this.horizontalSwingService = new HorizontalSwingService(this.platform, this.accessory);
+          } else {
+            this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [UNAVAILABLE]');
+          }
+        }
+
 
         /*********************************************************
          * Polling for state change
          *********************************************************/
 
-        setInterval(() => {
+        this.pollingInterval = setInterval(() => {
           this.platform.melviewService?.getStatus(
             this.accessory.context.device.unitid)
             .then(s => {
@@ -62,5 +87,12 @@ export class MelviewMitsubishiPlatformAccessory {
               this.platform.log.debug(e);
             });
         }, 5000);
+    }
+
+    public stopPolling() {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = undefined;
+      }
     }
 }
