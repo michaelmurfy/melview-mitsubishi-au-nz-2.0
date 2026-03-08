@@ -72,6 +72,7 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `dry` | boolean | no | `false` | Enable Dehumidifier accessory for dry mode |
 | `fanMode` | boolean | no | `false` | Enable Fan accessory for fan-only mode |
 | `airflowH` | boolean | no | `false` | Enable Switch accessory for horizontal swing |
+| `swingMode` | boolean | no | `false` | Enable vertical swing mode control on the main AC tile. Enable only if needed; some units reject swing commands during power transitions. |
 | `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on a separate Fan accessory (auto-added) |
 | `fanSpeedOnMainTile` | boolean | no | `false` | *(advanced)* Also show fan speed slider on the main AC tile (requires `fanSpeed: true`) |
 | `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
@@ -90,6 +91,7 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "dry": true,
       "fanMode": true,
       "airflowH": false,
+      "swingMode": false,
       "fanSpeed": false,
       "fanSpeedOnMainTile": false,
       "outdoorTemp": false,
@@ -144,9 +146,16 @@ the nearest valid stage.
 ### Vertical swing
 
 On units where `hasswing` or `hasairdir` is reported by the API, a **Swing Mode**
-toggle appears on the Heater/Cooler service automatically (no config needed):
+toggle can be added to the Heater/Cooler service by setting `swingMode: true`
+(disabled by default):
 - **Swing enabled** → continuous up/down sweep
 - **Swing disabled** → fixed at top position
+
+**Note:** Swing mode control is disabled by default because some units reject swing
+commands during power state transitions, which can interfere with tile toggle
+reliability. If you don't enable `swingMode` in the config, simply set your unit to
+**Auto** swing mode using your physical remote or the Mitsubishi app, and it will
+automatically manage vertical airflow without HomeKit involvement.
 
 ### Outdoor Temperature Sensor (`outdoorTemp: true`)
 

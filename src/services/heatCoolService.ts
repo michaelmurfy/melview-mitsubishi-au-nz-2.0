@@ -12,7 +12,7 @@ import {
 
 export class HeatCoolService extends AbstractService {
     private startupComplete = false;
-    private readonly effectiveConfig: { fanSpeed?: boolean; fanSpeedOnMainTile?: boolean };
+    private readonly effectiveConfig: { fanSpeed?: boolean; fanSpeedOnMainTile?: boolean; swingMode?: boolean };
 
     constructor(
         protected readonly platform: MelviewMitsubishiHomebridgePlatform,
@@ -22,6 +22,7 @@ export class HeatCoolService extends AbstractService {
         this.effectiveConfig = (this.accessory.context.effectiveConfig ?? this.platform.config) as {
             fanSpeed?: boolean;
             fanSpeedOnMainTile?: boolean;
+            swingMode?: boolean;
         };
 
         this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState)
@@ -52,8 +53,10 @@ export class HeatCoolService extends AbstractService {
         this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.maxValue = heat.max;
         this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minStep = 0.5;
 
-        // Vertical airflow direction / swing — only on supported models
-        if (this.device.capabilities?.hasswing === 1 || this.device.capabilities?.hasairdir === 1) {
+        // Vertical airflow direction / swing — only on supported models and if config enabled
+        // Default to false for reliability (swingMode === true)
+        const swingModeEnabled = this.effectiveConfig.swingMode === true;
+        if (swingModeEnabled && (this.device.capabilities?.hasswing === 1 || this.device.capabilities?.hasairdir === 1)) {
             this.service.getCharacteristic(this.platform.Characteristic.SwingMode)
                 .onSet(this.setSwingMode.bind(this))
                 .onGet(this.getSwingMode.bind(this));
