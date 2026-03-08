@@ -12,12 +12,17 @@ import {
 
 export class HeatCoolService extends AbstractService {
     private startupComplete = false;
+    private readonly effectiveConfig: { fanSpeed?: boolean; fanSpeedOnMainTile?: boolean };
 
     constructor(
         protected readonly platform: MelviewMitsubishiHomebridgePlatform,
         protected readonly accessory: PlatformAccessory,
     ) {
         super(platform, accessory);
+        this.effectiveConfig = (this.accessory.context.effectiveConfig ?? this.platform.config) as {
+            fanSpeed?: boolean;
+            fanSpeedOnMainTile?: boolean;
+        };
 
         this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState)
             .onGet(this.getCurrentHeaterCoolerState.bind(this));
@@ -56,7 +61,7 @@ export class HeatCoolService extends AbstractService {
 
         // Fan Speed Control on main AC tile — optional, disabled by default.
         // Requires fanSpeed=true and fanSpeedOnMainTile=true.
-        if (this.platform.config.fanSpeed && this.platform.config.fanSpeedOnMainTile) {
+        if (this.effectiveConfig.fanSpeed && this.effectiveConfig.fanSpeedOnMainTile) {
             this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
             const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
             rs.props.minValue = 0;

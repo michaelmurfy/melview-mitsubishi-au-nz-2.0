@@ -13,11 +13,16 @@ import {
  * Activating this service powers on the unit and sets mode to WorkMode.FAN (7).
  */
 export class FanModeService extends AbstractService {
+  private readonly effectiveConfig: { fanSpeed?: boolean };
+
   public constructor(
     protected readonly platform: MelviewMitsubishiHomebridgePlatform,
     protected readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
+    this.effectiveConfig = (this.accessory.context.effectiveConfig ?? this.platform.config) as {
+      fanSpeed?: boolean;
+    };
 
     this.service.setCharacteristic(
       this.platform.Characteristic.Name,
@@ -25,7 +30,7 @@ export class FanModeService extends AbstractService {
     );
 
     // Fan Speed Control — gated by config.fanSpeed (optional, default off)
-    if (this.platform.config.fanSpeed) {
+    if (this.effectiveConfig.fanSpeed) {
       this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
       const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
       rs.props.minValue = 0;

@@ -76,7 +76,9 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `fanSpeedOnMainTile` | boolean | no | `false` | *(advanced)* Also show fan speed slider on the main AC tile (requires `fanSpeed: true`) |
 | `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
 | `showFaultSensor` | boolean | no | `false` | Add a Contact Sensor accessory for unit fault status |
+| `showHealthSensor` | boolean | no | `false` | Add a Contact Sensor accessory for unit health (offline or fault) |
 | `pollIntervalSeconds` | integer | no | `30` | State polling interval in seconds (range `5` to `300`) |
+| `perUnitOverrides` | array | no | — | Optional per-unit override objects keyed by `unitId` |
 
 ### Example `config.json`
 
@@ -94,7 +96,16 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "fanSpeedOnMainTile": false,
       "outdoorTemp": false,
       "showFaultSensor": false,
-      "pollIntervalSeconds": 30
+      "showHealthSensor": false,
+      "pollIntervalSeconds": 30,
+      "perUnitOverrides": [
+        {
+          "unitId": "1234567890",
+          "fanSpeed": true,
+          "fanSpeedOnMainTile": true,
+          "pollIntervalSeconds": 15
+        }
+      ]
     }
   ]
 }
@@ -114,6 +125,7 @@ The main service. Provides:
 - Current temperature
 - Heating threshold temperature
 - Cooling threshold temperature
+- Status fault (shows a fault when the unit reports an error or is offline)
 - Swing mode (vertical) — shown automatically on supported models
 
 ### Fan speed mapping
@@ -154,6 +166,12 @@ When enabled, a **Contact Sensor** tile is added to represent fault state from t
 Melview payload:
 - **Detected / Open** → fault currently reported
 - **Not detected / Closed** → normal
+
+### Health Sensor (`showHealthSensor: true`)
+
+When enabled, a **Contact Sensor** tile is added for overall health:
+- **Detected / Open** → unhealthy (offline or fault)
+- **Not detected / Closed** → healthy
 
 ### Dehumidifier / Dry mode (`dry: true`)
 
@@ -196,6 +214,11 @@ When enabled and the unit reports `hasairdirh`, a **Switch** accessory is added:
 The plugin polls each unit's status every **30 seconds** by default (configurable via
 `pollIntervalSeconds`, from 5 to 300) to keep readings and mode indicators current
 in the Home app without needing manual refresh.
+
+### Per-unit overrides (`perUnitOverrides`)
+
+Use `perUnitOverrides` to apply different options per unit ID (for example, enabling
+fan speed only in one room, or polling one critical unit more frequently).
 
 ## Known Issues
 

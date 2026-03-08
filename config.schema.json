@@ -60,6 +60,12 @@
         "default": false,
         "description": "Adds a Contact Sensor accessory that indicates when the unit reports a fault condition."
       },
+      "showHealthSensor": {
+        "title": "Enable Health Sensor",
+        "type": "boolean",
+        "default": false,
+        "description": "Adds a Contact Sensor accessory that indicates unhealthy state (offline or fault)."
+      },
       "pollIntervalSeconds": {
         "title": "Polling Interval (seconds)",
         "type": "integer",
@@ -67,6 +73,62 @@
         "minimum": 5,
         "maximum": 300,
         "description": "How often to refresh each unit state from Melview. Lower values are more responsive but increase API traffic."
+      },
+      "perUnitOverrides": {
+        "title": "Per-Unit Overrides",
+        "type": "array",
+        "description": "Override options for specific units by unitId.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "unitId": {
+              "title": "Unit ID",
+              "type": "string",
+              "description": "Melview unit identifier (required)."
+            },
+            "dry": {
+              "title": "Enable Dry Mode",
+              "type": "boolean"
+            },
+            "fanMode": {
+              "title": "Enable Fan-Only Mode",
+              "type": "boolean"
+            },
+            "airflowH": {
+              "title": "Enable Horizontal Airflow Swing",
+              "type": "boolean"
+            },
+            "fanSpeed": {
+              "title": "Enable Fan Speed Control",
+              "type": "boolean"
+            },
+            "fanSpeedOnMainTile": {
+              "title": "Show Fan Speed on Main AC Tile",
+              "type": "boolean"
+            },
+            "outdoorTemp": {
+              "title": "Enable Outdoor Temperature Sensor",
+              "type": "boolean"
+            },
+            "showFaultSensor": {
+              "title": "Enable Fault Sensor",
+              "type": "boolean"
+            },
+            "showHealthSensor": {
+              "title": "Enable Health Sensor",
+              "type": "boolean"
+            },
+            "pollIntervalSeconds": {
+              "title": "Polling Interval (seconds)",
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 300
+            }
+          },
+          "required": [
+            "unitId"
+          ]
+        }
       }
     }
   }
