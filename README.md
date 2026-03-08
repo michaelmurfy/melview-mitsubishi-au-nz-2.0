@@ -71,6 +71,7 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `dry` | boolean | no | `false` | Enable Dehumidifier accessory for dry mode |
 | `fanMode` | boolean | no | `false` | Enable Fan accessory for fan-only mode |
 | `airflowH` | boolean | no | `false` | Enable Switch accessory for horizontal swing |
+| `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on the AC tile and Fan service |
 
 ### Example `config.json`
 
@@ -83,7 +84,8 @@ All configuration is done via the Homebridge UI settings panel or by editing
       "password": "yourpassword",
       "dry": true,
       "fanMode": true,
-      "airflowH": false
+      "airflowH": false,
+      "fanSpeed": false
     }
   ]
 }
@@ -149,8 +151,18 @@ This mode dehumidifies the room without the full heating/cooling cycle.
 ### Fan-only mode (`fanMode: true`)
 
 When enabled, a **Fan** accessory is added. Activating it powers the unit in fan-only
-mode (circulates air, no temperature conditioning). Fan speed is controllable
-independently.
+mode (circulates air, no temperature conditioning).
+
+### Fan speed control (`fanSpeed: true`, experimental)
+
+Disabled by default. When enabled, a fan speed slider (Auto / Low / Medium / High)
+appears on both the main **Air Conditioner** tile and the optional **Fan** service.
+
+> **Note:** Due to the way HomeKit caches characteristic values, enabling fan speed
+> can cause the unit to briefly jump to a high fan stage on startup. The plugin
+> includes a 5-second startup guard that ignores incoming set commands during
+> bridge reconnect, which mitigates but may not fully eliminate this behaviour on
+> all controllers.
 
 ### Horizontal swing (`airflowH: true`)
 

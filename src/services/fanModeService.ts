@@ -5,6 +5,7 @@ import {AbstractService} from './abstractService';
 import {
   CommandFanMode,
   CommandPower,
+  CommandRotationSpeed,
 } from '../melviewCommand';
 
 /**
@@ -17,6 +18,21 @@ export class FanModeService extends AbstractService {
     protected readonly accessory: PlatformAccessory,
   ) {
     super(platform, accessory);
+
+    // Fan Speed Control — gated by config.fanSpeed (optional, default off)
+    if (this.platform.config.fanSpeed) {
+      this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
+      const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
+      rs.props.minValue = 0;
+      rs.props.maxValue = 100;
+      rs.props.minStep = 20;
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.RotationSpeed,
+        this.fanStageToPercent(this.device.state?.setfan ?? 0),
+      );
+      rs.onSet(this.setRotationSpeed.bind(this))
+        .onGet(this.getRotationSpeed.bind(this));
+    }
   }
 
   protected getServiceType<T extends WithUUID<typeof Service>>(): T {
@@ -52,5 +68,21 @@ export class FanModeService extends AbstractService {
         new CommandPower(0, this.device, this.platform),
       );
     }
+  }
+
+  async getRotationSpeed(): Promise<CharacteristicValue> {
+    return this.fanStageToPercent(this.device.state?.setfan ?? 0);
+  }
+
+  async setRotationSpeed(value: CharacteristicValue) {
+    const newStage = this.percentToFanStage(value as number);
+    const currentStage = this.device.state?.setfan ?? 0;
+    if (newStage === currentStage) {
+      this.log.debug('RotationSpeed unchanged (stage', currentStage, '), skipping command');
+      return;
+    }
+    this.log.debug('RotationSpeed ->', value, '(stage', newStage, ')');
+    this.platform.melviewService?.command(
+      new CommandRotationSpeed(value, this.device, this.platform));
   }
 }

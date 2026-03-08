@@ -35,6 +35,12 @@
         "type": "boolean",
         "default": false,
         "description": "Adds a Switch service for horizontal airflow direction on supported models (ON = sweep, OFF = centre). Vertical swing is always enabled automatically on supported models."
+      },
+      "fanSpeed": {
+        "title": "Enable Fan Speed Control (experimental)",
+        "type": "boolean",
+        "default": false,
+        "description": "Exposes a fan speed slider (Auto / Low / Medium / High) on the main AC tile and on the Fan-Only service. Disabled by default to prevent spurious commands on startup."
       }
     }
   }

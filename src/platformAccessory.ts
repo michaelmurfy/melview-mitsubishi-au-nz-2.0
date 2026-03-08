@@ -38,6 +38,16 @@ export class MelviewMitsubishiPlatformAccessory {
         this.acService = new HeatCoolService(this.platform, this.accessory);
         this.platform.log.info('HEAT/COOL Capability:', device.room, ' [COMPLETED]');
 
+        // Remove any cached RotationSpeed on the HeaterCooler service when fan
+        // speed control is disabled (prevents stale characteristic from a prior config).
+        if (!this.platform.config.fanSpeed) {
+          if (this.acService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
+            const staleRs = this.acService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
+            this.acService.getService().removeCharacteristic(staleRs);
+            this.platform.log.info('FAN SPEED Capability (HeaterCooler):', device.room, ' [REMOVED]');
+          }
+        }
+
         /*********************************************************
          * Dehumidifier Capability
          * https://developers.homebridge.io/#/service/HumidifierDehumidifier
@@ -61,6 +71,14 @@ export class MelviewMitsubishiPlatformAccessory {
         if (this.platform.config.fanMode) {
           this.fanModeService = new FanModeService(this.platform, this.accessory);
           this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
+          // Remove any cached RotationSpeed on the Fanv2 service when fan speed is disabled.
+          if (!this.platform.config.fanSpeed) {
+            if (this.fanModeService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
+              const staleRs = this.fanModeService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
+              this.fanModeService.getService().removeCharacteristic(staleRs);
+              this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [REMOVED]');
+            }
+          }
         } else {
           const stale = this.accessory.getService(this.platform.Service.Fanv2);
           if (stale) {

@@ -7,9 +7,12 @@ import {
     CommandTargetHeaterCoolerState,
     CommandTemperature,
     CommandAirDirection,
+    CommandRotationSpeed,
 } from "../melviewCommand";
 
 export class HeatCoolService extends AbstractService {
+    private startupComplete = false;
+
     constructor(
         protected readonly platform: MelviewMitsubishiHomebridgePlatform,
         protected readonly accessory: PlatformAccessory,
@@ -49,6 +52,24 @@ export class HeatCoolService extends AbstractService {
             this.service.getCharacteristic(this.platform.Characteristic.SwingMode)
                 .onSet(this.setSwingMode.bind(this))
                 .onGet(this.getSwingMode.bind(this));
+        }
+
+        // Fan Speed Control — optional, gated by config.fanSpeed (default off)
+        if (this.platform.config.fanSpeed) {
+            this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
+            const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
+            rs.props.minValue = 0;
+            rs.props.maxValue = 100;
+            rs.props.minStep = 20;
+            this.service.updateCharacteristic(
+                this.platform.Characteristic.RotationSpeed,
+                this.fanStageToPercent(this.device.state?.setfan ?? 0),
+            );
+            rs.onSet(this.setRotationSpeed.bind(this))
+                .onGet(this.getRotationSpeed.bind(this));
+            // Ignore onSet calls during 5-second startup window to prevent
+            // HomeKit controllers pushing stale cached values back to the unit.
+            setTimeout(() => { this.startupComplete = true; }, 5000);
         }
     }
 
@@ -248,5 +269,25 @@ export class HeatCoolService extends AbstractService {
         const airdir = value === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 0 : 1;
         await this.platform.melviewService?.command(
             new CommandAirDirection(airdir, this.device, this.platform));
+    }
+
+    async getRotationSpeed(): Promise<CharacteristicValue> {
+        return this.fanStageToPercent(this.device.state?.setfan ?? 0);
+    }
+
+    async setRotationSpeed(value: CharacteristicValue) {
+        if (!this.startupComplete) {
+            this.log.debug('RotationSpeed onSet ignored during startup window (value:', value, ')');
+            return;
+        }
+        const newStage = this.percentToFanStage(value as number);
+        const currentStage = this.device.state?.setfan ?? 0;
+        if (newStage === currentStage) {
+            this.log.debug('RotationSpeed unchanged (stage', currentStage, '), skipping command');
+            return;
+        }
+        this.log.debug('RotationSpeed ->', value, '(stage', newStage, ')');
+        this.platform.melviewService?.command(
+            new CommandRotationSpeed(value, this.device, this.platform));
     }
 }
