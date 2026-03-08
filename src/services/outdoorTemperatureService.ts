@@ -17,15 +17,15 @@ export class OutdoorTemperatureService {
   ) {
     this.device = accessory.context.device;
 
+    const name = (this.device.name ?? this.device.room) + ' Outdoor';
+
     this.service =
       this.accessory.getService(this.platform.Service.TemperatureSensor) ||
-      this.accessory.addService(this.platform.Service.TemperatureSensor);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.accessory.addService(this.platform.Service.TemperatureSensor as any, name, 'outdoor-temperature');
 
-    const name = this.device.name ?? this.device.room;
-    this.service.setCharacteristic(
-      this.platform.Characteristic.Name,
-      name + ' Outdoor',
-    );
+    this.service.setCharacteristic(this.platform.Characteristic.Name, name);
+    this.service.setCharacteristic(this.platform.Characteristic.ConfiguredName, name);
 
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minValue = -50;
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.maxValue = 70;
