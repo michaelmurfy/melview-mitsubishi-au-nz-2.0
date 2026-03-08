@@ -6,6 +6,7 @@ import {HeatCoolService} from './services/heatCoolService';
 import {DryService} from './services/dryService';
 import {FanModeService} from './services/fanModeService';
 import {HorizontalSwingService} from './services/horizontalSwingService';
+import {OutdoorTemperatureService} from './services/outdoorTemperatureService';
 
 /**
  * Platform Accessory
@@ -16,6 +17,7 @@ export class MelviewMitsubishiPlatformAccessory {
   private dryService?: DryService;
   private fanModeService?: FanModeService;
   private horizontalSwingService?: HorizontalSwingService;
+  private outdoorTemperatureService?: OutdoorTemperatureService;
   private acService: HeatCoolService;
   private pollingInterval?: ReturnType<typeof setInterval>;
   constructor(
@@ -67,6 +69,15 @@ export class MelviewMitsubishiPlatformAccessory {
           } else {
             this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [UNAVAILABLE]');
           }
+        }
+
+        /*********************************************************
+         * Outdoor Temperature Sensor
+         *********************************************************/
+        if (device.state?.outdoortemp && !isNaN(parseFloat(device.state.outdoortemp))) {
+          this.outdoorTemperatureService = new OutdoorTemperatureService(this.platform, this.accessory);
+        } else {
+          this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [UNAVAILABLE]');
         }
 
 
