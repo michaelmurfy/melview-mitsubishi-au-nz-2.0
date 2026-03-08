@@ -19,6 +19,11 @@ export class FanModeService extends AbstractService {
   ) {
     super(platform, accessory);
 
+    this.service.setCharacteristic(
+      this.platform.Characteristic.Name,
+      `${this.device.name} Fan Speed`,
+    );
+
     // Fan Speed Control — gated by config.fanSpeed (optional, default off)
     if (this.platform.config.fanSpeed) {
       this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
