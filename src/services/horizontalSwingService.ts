@@ -60,4 +60,10 @@ export class HorizontalSwingService {
       this.platform.log.error('setOn (Horizontal Swing) command failed:', String(e));
     }
   }
+
+  public syncFromState(): void {
+    void this.getOn().then((on) => {
+      this.service.updateCharacteristic(this.platform.Characteristic.On, on);
+    });
+  }
 }

@@ -40,4 +40,10 @@ export class OutdoorTemperatureService {
     const temp = parseFloat(this.device.state?.outdoortemp ?? '');
     return isNaN(temp) ? 0 : temp;
   }
+
+  public syncFromState(): void {
+    void this.getCurrentTemperature().then((temp) => {
+      this.service.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, temp);
+    });
+  }
 }

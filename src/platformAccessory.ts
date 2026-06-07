@@ -162,6 +162,8 @@ export class MelviewMitsubishiPlatformAccessory {
         const pollIntervalSeconds = this.getPollIntervalSeconds();
         const pollIntervalMs = this.getJitteredIntervalMs(pollIntervalSeconds * 1000);
         this.platform.log.info('Polling interval:', pollIntervalSeconds, 'seconds (jittered to', pollIntervalMs, 'ms)');
+        this.syncFromPolledState();
+
         this.pollingInterval = setInterval(() => {
           this.platform.melviewService?.getStatus(
             this.accessory.context.device.unitid)
@@ -170,6 +172,7 @@ export class MelviewMitsubishiPlatformAccessory {
               //   this.accessory.context.device.unitid);
               this.accessory.context.connectionHealthy = true;
               this.accessory.context.device.state = s;
+              this.syncFromPolledState();
               this.updateMainStatusFault();
             })
             .catch(e => {
@@ -263,6 +266,14 @@ export class MelviewMitsubishiPlatformAccessory {
     const fault = (this.accessory.context.device.state?.fault ?? '').toString().trim().toLowerCase();
     const hasFault = fault !== '' && fault !== '0' && fault !== 'ok' && fault !== 'none';
     return !online || hasFault;
+  }
+
+  private syncFromPolledState() {
+    this.acService.syncFromState();
+    this.dryService?.syncFromState();
+    this.fanModeService?.syncFromState();
+    this.horizontalSwingService?.syncFromState();
+    this.outdoorTemperatureService?.syncFromState();
   }
 
   public stopPolling() {

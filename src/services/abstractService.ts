@@ -29,8 +29,18 @@ export abstract class AbstractService {
     protected abstract getDeviceRoom() : string;
     protected abstract getDeviceName() : string;
 
-    get characterisitc() {
+    get characteristic() {
         return this.platform.api.hap.Characteristic;
+    }
+
+    /**
+     * Push the latest polled device state into HomeKit characteristics.
+     */
+    public syncFromState(): void {
+        const active = this.device.state?.power === 0
+            ? this.platform.Characteristic.Active.INACTIVE
+            : this.platform.Characteristic.Active.ACTIVE;
+        this.service.updateCharacteristic(this.platform.Characteristic.Active, active);
     }
 
     public getService() : Service {

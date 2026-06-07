@@ -29,7 +29,7 @@ export class MelviewService {
       method: 'POST',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0',
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         user: this.config.user,
@@ -52,8 +52,7 @@ export class MelviewService {
       throw new Error('Unable to get auth token from MelView. You may need to reset your password with Mitsubishi');
     }
 
-    const body = await response.text();
-    return JSON.parse(body) as Account;
+    return this.parseJsonResponse<Account>(response, 'login');
   }
 
   /**
@@ -64,19 +63,13 @@ export class MelviewService {
       return;
     }
 
-    if (this.authWillExpire()) {
-      await this.login().catch(e => {
-        this.log.error(e);
-      });
-    }
+    await this.ensureAuthenticated();
 
     const response = await fetch(URL + ROOMS_SERVICE, {
       method: 'POST',
       headers: this.populateHeaders(),
     });
-    const body = await response.text();
-    const buildings = JSON.parse(body) as Building[];
-    return buildings;
+    return this.parseJsonResponse<Building[]>(response, 'discover');
   }
 
   /**
@@ -84,11 +77,7 @@ export class MelviewService {
      * @param unitID is the unit identifier
      */
   public async capabilities(unitID: string): Promise<Capabilities> {
-    if (this.authWillExpire()) {
-      await this.login().catch(e => {
-        this.log.error(e);
-      });
-    }
+    await this.ensureAuthenticated();
 
     const response = await fetch(URL + CAPABILITIES_SERVICE, {
       method: 'POST',
@@ -97,8 +86,7 @@ export class MelviewService {
         unitid: unitID,
       }),
     });
-    const body = await response.text();
-    return JSON.parse(body) as Capabilities;
+    return this.parseJsonResponse<Capabilities>(response, 'capabilities');
   }
 
   /**
@@ -109,11 +97,7 @@ export class MelviewService {
      */
   public async command(command : Command, ...commandChain: Command[]) {
     const allComms = [command, ...commandChain].map(c => c.execute()).join(',');
-    if (this.authWillExpire()) {
-      await this.login().catch(e => {
-        this.log.error(e);
-      });
-    }
+    await this.ensureAuthenticated();
 
     const req = JSON.stringify({
       unitid: command.getUnitID(),
@@ -127,16 +111,7 @@ export class MelviewService {
       headers: this.populateHeaders(),
       body: req,
     });
-    if (!response || response.status !== 200) {
-      throw new Error('Command request failed with HTTP status ' + (response?.status ?? 'unknown'));
-    }
-    const body = await response.text();
-    let rBody: CommandResponse;
-    try {
-      rBody = JSON.parse(body) as CommandResponse;
-    } catch (e) {
-      throw new Error('Failed to parse command response: ' + String(e));
-    }
+    const rBody = await this.parseJsonResponse<CommandResponse>(response, 'command');
     if (rBody.error !== 'ok') {
       throw new Error('Command rejected by Melview API: ' + (rBody.error || 'unknown error'));
     }
@@ -160,11 +135,7 @@ export class MelviewService {
      * @param unitID is the unit identifier
      */
   public async getStatus(unitID: string): Promise<State> {
-    if (this.authWillExpire()) {
-      await this.login().catch(e => {
-        this.log.error(e);
-      });
-    }
+    await this.ensureAuthenticated();
 
     const response = await fetch(URL + COMMAND_SERVICE, {
       method: 'POST',
@@ -173,8 +144,29 @@ export class MelviewService {
         unitid: unitID,
       }),
     });
+    return this.parseJsonResponse<State>(response, 'getStatus');
+  }
+
+  private async ensureAuthenticated(): Promise<void> {
+    if (!this.auth || this.authWillExpire()) {
+      await this.login();
+    }
+    if (!this.auth?.value) {
+      throw new Error('Melview authentication is unavailable');
+    }
+  }
+
+  private async parseJsonResponse<T>(response: globalThis.Response, context: string): Promise<T> {
+    if (!response || response.status !== 200) {
+      throw new Error(`${context} request failed with HTTP status ${response?.status ?? 'unknown'}`);
+    }
+
     const body = await response.text();
-    return JSON.parse(body) as State;
+    try {
+      return JSON.parse(body) as T;
+    } catch (e) {
+      throw new Error(`Failed to parse ${context} response: ${String(e)}`);
+    }
   }
 
   private extractCookie(response: globalThis.Response) {
@@ -182,15 +174,6 @@ export class MelviewService {
     const raw = setCookieHeaders[0] ?? '';
     this.auth = Cookie.parse(raw) ?? undefined;
   }
-
-  // private async debugResponse(method: string, response: Response): Promise<string> {
-  //   // this.log.debug(method, 'HEADERS:--------------------------------------\n',
-  //   //   JSON.stringify(response.headers.raw()));
-  //   const body = await response.text();
-  //   // this.log.debug(method, 'BODY:--------------------------------------\n',
-  //   //   body);
-  //   return body;
-  // }
 
   private populateHeaders() {
     return {
