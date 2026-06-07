@@ -14,7 +14,7 @@ All units (standard):
 - **Current temperature** — Live room temperature readings
 - **Issue status** — Integrated on the main tile via `StatusFault` (fault or offline)
 - **Outdoor temperature** — Live outdoor unit temperature, exposed as a separate Temperature Sensor tile (optional, enable with `outdoorTemp: true`)
-- **Vertical airflow swing** — Enabled automatically on supported models (swing vs. fixed position)
+- **Vertical airflow swing** — Optional on supported models; enable with `swingMode: true` (disabled by default for reliability)
 
 Optional / model-dependent:
 - **Fan speed** — Auto, Low, Medium-low, Medium, Medium-high, High (6 discrete stages mapped to 0–100%)

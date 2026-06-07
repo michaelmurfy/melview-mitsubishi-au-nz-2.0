@@ -104,4 +104,14 @@ export class FanModeService extends AbstractService {
       this.log.error('setRotationSpeed (Fan Mode) command failed:', String(e));
     }
   }
+
+  public syncFromState(): void {
+    super.syncFromState();
+    if (this.service.testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.RotationSpeed,
+        this.fanStageToPercent(this.device.state?.setfan ?? 0),
+      );
+    }
+  }
 }

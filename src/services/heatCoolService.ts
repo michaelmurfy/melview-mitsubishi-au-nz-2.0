@@ -1,6 +1,19 @@
 import {MelviewMitsubishiHomebridgePlatform} from "../platform";
 import {CharacteristicValue, PlatformAccessory, Service, WithUUID} from "homebridge";
-import {WorkMode} from "../data";
+import {Range, WorkMode} from "../data";
+
+const DEFAULT_TEMP_RANGE: Range = { min: 16, max: 30 };
+
+function getModeRange(
+    ranges: Record<string, Range> | undefined,
+    mode: WorkMode,
+): Range {
+    const range = ranges?.[String(mode)];
+    if (range && typeof range.min === 'number' && typeof range.max === 'number') {
+        return range;
+    }
+    return DEFAULT_TEMP_RANGE;
+}
 import {AbstractService} from "./abstractService";
 import {
     CommandPower,
@@ -40,18 +53,18 @@ export class HeatCoolService extends AbstractService {
         this.service.getCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature)
             .onSet(this.setCoolingThresholdTemperature.bind(this))
             .onGet(this.getCoolingThresholdTemperature.bind(this));;
-        const cool = this.device.state!.max![WorkMode.COOL + ''];
-        this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.minValue = cool.min;
-        this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.maxValue = cool.max;
-        this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.minStep = 0.5;
+        const cool = getModeRange(this.device.state?.max, WorkMode.COOL);
+        this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue = cool.min;
+        this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue = cool.max;
+        this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minStep = 0.5;
 
         this.service.getCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature)
             .onSet(this.setHeatingThresholdTemperature.bind(this))
             .onGet(this.getHeatingThresholdTemperature.bind(this));
-        const heat = this.device.state!.max![WorkMode.HEAT + ''];
-        this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minValue = heat.min;
-        this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.maxValue = heat.max;
-        this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minStep = 0.5;
+        const heat = getModeRange(this.device.state?.max, WorkMode.HEAT);
+        this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue = heat.min;
+        this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue = heat.max;
+        this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minStep = 0.5;
 
         // Vertical airflow direction / swing — only on supported models and if config enabled
         // Default to false for reliability (swingMode === true)
@@ -169,8 +182,8 @@ export class HeatCoolService extends AbstractService {
 
     async setCoolingThresholdTemperature(value: CharacteristicValue) {
         this.platform.log.debug('setCoolingThresholdTemperature ->', value);
-        const minVal = this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.maxValue!;
+        const minVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue!;
+        const maxVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue!;
         if ((value as number) < minVal) {
             this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
             value = minVal;
@@ -188,8 +201,8 @@ export class HeatCoolService extends AbstractService {
 
     async getCoolingThresholdTemperature(): Promise<CharacteristicValue> {
         const temp = parseFloat(this.device.state!.settemp)
-        const minVal = this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characterisitc.CoolingThresholdTemperature).props.maxValue!;
+        const minVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue!;
+        const maxVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue!;
         if (temp < minVal) {
             return minVal;
         } else if (temp > maxVal) {
@@ -200,8 +213,8 @@ export class HeatCoolService extends AbstractService {
 
     async setHeatingThresholdTemperature(value: CharacteristicValue) {
         this.platform.log.debug('setHeatingThresholdTemperature:', value);
-        const minVal = this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.maxValue!;
+        const minVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue!;
+        const maxVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue!;
         if ((value as number) < minVal) {
             this.platform.log.warn('setHeatingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
             value = minVal;
@@ -220,8 +233,8 @@ export class HeatCoolService extends AbstractService {
 
     async getHeatingThresholdTemperature(): Promise<CharacteristicValue> {
         const temp = parseFloat(this.device.state!.settemp)
-        const minVal = this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characterisitc.HeatingThresholdTemperature).props.maxValue!;
+        const minVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue!;
+        const maxVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue!;
         if (temp < minVal) {
             return minVal;
         } else if (temp > maxVal) {
@@ -285,7 +298,6 @@ export class HeatCoolService extends AbstractService {
         try {
             await this.platform.melviewService?.command(
                 new CommandTargetHeaterCoolerState(normalizedTarget, this.device, this.platform));
-            this.accessory.context.lastMainTargetState = normalizedTarget;
             const c = this.platform.Characteristic;
             switch (normalizedTarget) {
                 case c.TargetHeaterCoolerState.COOL:
@@ -370,6 +382,41 @@ export class HeatCoolService extends AbstractService {
                 new CommandRotationSpeed(value, this.device, this.platform));
         } catch (e) {
             this.log.error('setRotationSpeed command failed:', String(e));
+        }
+    }
+
+    public syncFromState(): void {
+        super.syncFromState();
+        const c = this.platform.Characteristic;
+
+        void this.getCurrentHeaterCoolerState().then((currentState) => {
+            this.service.updateCharacteristic(c.CurrentHeaterCoolerState, currentState);
+        });
+        void this.getTargetHeaterCoolerState().then((targetState) => {
+            this.service.updateCharacteristic(c.TargetHeaterCoolerState, targetState);
+        });
+        this.service.updateCharacteristic(
+            c.CurrentTemperature,
+            parseFloat(this.device.state?.roomtemp ?? '0'),
+        );
+        void this.getCoolingThresholdTemperature().then((coolingTemp) => {
+            this.service.updateCharacteristic(c.CoolingThresholdTemperature, coolingTemp);
+        });
+        void this.getHeatingThresholdTemperature().then((heatingTemp) => {
+            this.service.updateCharacteristic(c.HeatingThresholdTemperature, heatingTemp);
+        });
+
+        if (this.service.testCharacteristic(c.SwingMode)) {
+            void this.getSwingMode().then((swingMode) => {
+                this.service.updateCharacteristic(c.SwingMode, swingMode);
+            });
+        }
+
+        if (this.service.testCharacteristic(c.RotationSpeed)) {
+            this.service.updateCharacteristic(
+                c.RotationSpeed,
+                this.fanStageToPercent(this.device.state?.setfan ?? 0),
+            );
         }
     }
 }

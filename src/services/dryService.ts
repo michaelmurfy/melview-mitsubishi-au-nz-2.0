@@ -29,17 +29,13 @@ export class DryService extends AbstractService {
     }
 
     async getActive(): Promise<CharacteristicValue> {
-        this.log.info('GET DRY ACITVE [', this.getDeviceName(), '] =', this.device.state!.power, 'DRY =', this.device.state?.setmode);
-        switch (this.device.state?.setmode) {
-            case WorkMode.DRY:
-            case WorkMode.COOL:
-            case WorkMode.HEAT:
-                return this.device.state!.power == 0 ?
-                    this.platform.Characteristic.Active.INACTIVE :
-                    this.platform.Characteristic.Active.ACTIVE;
-            default:
-                return this.platform.Characteristic.Active.INACTIVE;
+        this.log.info('GET DRY ACTIVE [', this.getDeviceName(), '] =', this.device.state!.power, 'DRY =', this.device.state?.setmode);
+        if (this.device.state?.setmode !== WorkMode.DRY) {
+            return this.platform.Characteristic.Active.INACTIVE;
         }
+        return this.device.state!.power === 0
+            ? this.platform.Characteristic.Active.INACTIVE
+            : this.platform.Characteristic.Active.ACTIVE;
     }
 
     async setActive(value: CharacteristicValue) {
@@ -94,6 +90,18 @@ export class DryService extends AbstractService {
     }
 
     async getTargetHumidifierDehumidifierState(): Promise<CharacteristicValue> {
-        return this.characterisitc.TargetHumidifierDehumidifierState.DEHUMIDIFIER;
+        return this.characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER;
+    }
+
+    public syncFromState(): void {
+        super.syncFromState();
+        const c = this.platform.Characteristic;
+        void this.getCurrentHumidifierDehumidifierState().then((currentState) => {
+            this.service.updateCharacteristic(c.CurrentHumidifierDehumidifierState, currentState);
+        });
+        this.service.updateCharacteristic(
+            c.TargetHumidifierDehumidifierState,
+            c.TargetHumidifierDehumidifierState.DEHUMIDIFIER,
+        );
     }
 }
