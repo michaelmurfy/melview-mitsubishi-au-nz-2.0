@@ -1,7 +1,7 @@
-import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
-import {MelviewMitsubishiHomebridgePlatform} from '../platform';
-import {Unit} from '../data';
-import {CommandAirDirectionH} from '../melviewCommand';
+import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
+import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
+import { Unit } from '../data.js';
+import { CommandAirDirectionH } from '../melviewCommand.js';
 
 /**
  * Exposes a Switch HomeKit service for horizontal airflow swing.

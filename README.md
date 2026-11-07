@@ -43,8 +43,8 @@ is supported. Tested against:
 
 ## Requirements
 
-- [Homebridge](https://homebridge.io/) v1.6.0 or later (v2.0.0 supported)
-- Node.js ^18.20.4 or ^20.15.1 or ^22 or ^24
+- [Homebridge](https://homebridge.io/) v1.8.0 or later (Homebridge v2 fully supported)
+- Node.js ^22.12.0 or ^24 or ^26
 - An active Mitsubishi Wi-Fi Control account
 
 ## Installation
@@ -234,8 +234,8 @@ Each override object supports these optional keys:
   function standalone without internet.
 - **Dry mode fan speed** — Fan speed changes during dry mode are sent to the unit
   but most models don't visibly acknowledge the stage change while dehumidifying.
-- **Node ≥ 18.15 required** — This plugin uses the native `fetch` API introduced in
-  Node 18. Earlier versions are not supported.
+- **Node ≥ 22.12 required** — Homebridge v2 and this plugin require Node.js 22.12+,
+  24, or 26. Node 18 and 20 are no longer supported.
 
 ## Credits
 

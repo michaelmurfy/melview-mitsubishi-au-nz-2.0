@@ -1,9 +1,10 @@
 {
   "displayName": "AU/NZ Mitsubishi Air-Conditioners Bridge 2.0",
   "name": "homebridge-airconditioner-mitsubishi-au-nz-v2",
-  "version": "1.3.24",
+  "version": "1.4.0",
   "description": "Control your Mitsubishi Aircon units with Homebridge and Apple HomeKit",
   "license": "Apache-2.0",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git://github.com/michaelmurfy/melview-mitsubishi-au-nz-2.0.git"
@@ -12,8 +13,8 @@
     "url": "https://github.com/michaelmurfy/melview-mitsubishi-au-nz-2.0/issues"
   },
   "engines": {
-    "homebridge": "^1.6.0 || ^2.0.0-beta.0",
-    "node": "^18.20.4 || ^20.15.1 || ^22 || ^24"
+    "homebridge": "^1.8.0 || ^2.0.0",
+    "node": "^22.12.0 || ^24.0.0 || ^26.0.0"
   },
   "main": "dist/index.js",
   "files": [
@@ -21,27 +22,27 @@
     "config.schema.json"
   ],
   "scripts": {
-    "lint": "eslint src/**.ts --max-warnings=0",
+    "lint": "eslint . --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "supports-hap"
   ],
   "dependencies": {
     "tough-cookie": "^4.1.4"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "@types/tough-cookie": "^4.0.2",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^8.57.1",
-    "homebridge": "^1.11.2",
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.19.1",
+    "@types/tough-cookie": "^4.0.5",
+    "eslint": "^9.39.1",
+    "homebridge": "^2.5.0",
     "nodemon": "^3.1.14",
-    "rimraf": "^5.0.10",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "rimraf": "^6.1.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1"
   }
 }

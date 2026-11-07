@@ -1,6 +1,6 @@
-import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
-import {MelviewMitsubishiHomebridgePlatform} from '../platform';
-import {Unit} from '../data';
+import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
+import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
+import { Unit } from '../data.js';
 
 /**
  * Exposes a TemperatureSensor HomeKit service for the outdoor unit temperature.
