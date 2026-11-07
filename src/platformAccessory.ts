@@ -1,12 +1,12 @@
-import {PlatformAccessory} from 'homebridge';
+import { PlatformAccessory } from 'homebridge';
 
-import {MelviewMitsubishiHomebridgePlatform} from './platform';
-import {Unit} from './data';
-import {HeatCoolService} from './services/heatCoolService';
-import {DryService} from './services/dryService';
-import {FanModeService} from './services/fanModeService';
-import {HorizontalSwingService} from './services/horizontalSwingService';
-import {OutdoorTemperatureService} from './services/outdoorTemperatureService';
+import { MelviewMitsubishiHomebridgePlatform } from './platform.js';
+import { Unit } from './data.js';
+import { HeatCoolService } from './services/heatCoolService.js';
+import { DryService } from './services/dryService.js';
+import { FanModeService } from './services/fanModeService.js';
+import { HorizontalSwingService } from './services/horizontalSwingService.js';
+import { OutdoorTemperatureService } from './services/outdoorTemperatureService.js';
 
 interface EffectiveConfig {
   dry: boolean;

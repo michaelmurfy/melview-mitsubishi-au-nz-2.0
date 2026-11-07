@@ -1,12 +1,12 @@
-import {MelviewMitsubishiHomebridgePlatform} from '../platform';
-import {CharacteristicValue, PlatformAccessory, Service, WithUUID} from 'homebridge';
-import {WorkMode} from '../data';
-import {AbstractService} from './abstractService';
+import { CharacteristicValue, PlatformAccessory, Service, WithUUID } from 'homebridge';
+import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
+import { WorkMode } from '../data.js';
+import { AbstractService } from './abstractService.js';
 import {
   CommandFanMode,
   CommandPower,
   CommandRotationSpeed,
-} from '../melviewCommand';
+} from '../melviewCommand.js';
 
 /**
  * Exposes a Fanv2 HomeKit service that maps to the AC unit's FAN-only mode.
@@ -66,7 +66,7 @@ export class FanModeService extends AbstractService {
       : this.platform.Characteristic.Active.ACTIVE;
   }
 
-  async setActive(value: CharacteristicValue) {
+  async setActive(value: CharacteristicValue): Promise<void> {
     const turningOn = this.isActiveOn(value);
     this.log.info('Setting', this.getDeviceName(), 'Fan Mode =', turningOn ? 'ON' : 'OFF');
     try {

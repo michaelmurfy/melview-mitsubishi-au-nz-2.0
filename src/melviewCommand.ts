@@ -1,40 +1,43 @@
-import {CharacteristicValue} from 'homebridge';
-import {MelviewMitsubishiHomebridgePlatform} from './platform';
-import {Unit, WorkMode} from './data';
+import { CharacteristicValue } from 'homebridge';
+import { MelviewMitsubishiHomebridgePlatform } from './platform.js';
+import { Unit, WorkMode } from './data.js';
 
 export interface Command {
-    execute(): string;
-    getUnitID(): string;
-    getLocalCommandURL(): string;
-    getLocalCommandBody(key: string): string;
+  execute(): string;
+  getUnitID(): string;
+  getLocalCommandURL(): string;
+  getLocalCommandBody(key: string): string;
 }
 
-export abstract class AbstractCommand implements Command{
-  public constructor(protected value: CharacteristicValue,
-                          protected device: Unit,
-                          protected platform: MelviewMitsubishiHomebridgePlatform) {
+export abstract class AbstractCommand implements Command {
+  public constructor(
+    protected value: CharacteristicValue,
+    protected device: Unit,
+    protected platform: MelviewMitsubishiHomebridgePlatform,
+  ) {
   }
 
-    public abstract execute(): string;
+  public abstract execute(): string;
 
-    public getUnitID(): string {
-      return this.device.unitid;
-    }
+  public getUnitID(): string {
+    return this.device.unitid;
+  }
 
-    public getLocalCommandURL(): string {
-      return 'http://' + this.device.capabilities!.localip + '/smart';
-    }
+  public getLocalCommandURL(): string {
+    return 'http://' + this.device.capabilities!.localip + '/smart';
+  }
 
-    public getLocalCommandBody(key: string): string {
-      return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-            '<ESV>' + key + '</ESV>';
-    }
+  public getLocalCommandBody(key: string): string {
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<ESV>' + key + '</ESV>';
+  }
 }
 
 export class CommandPower extends AbstractCommand {
   public execute(): string {
     const normalized = typeof this.value === 'string' ? this.value.trim().toLowerCase() : this.value;
-    const requestedOn = normalized === 1 || normalized === true || normalized === '1' || normalized === 'true' || normalized === 'on';
+    const requestedOn = normalized === 1 || normalized === true || normalized === '1' ||
+      normalized === 'true' || normalized === 'on';
     const power = requestedOn ? 1 : 0;
     this.device.state!.power = power;
     return 'PW' + power;
@@ -46,13 +49,13 @@ export class CommandTargetHeaterCoolerState extends AbstractCommand {
     const target = Number(this.value);
     switch (target) {
       case this.platform.Characteristic.TargetHeaterCoolerState.COOL:
-                this.device.state!.setmode = WorkMode.COOL;
+        this.device.state!.setmode = WorkMode.COOL;
         return 'MD' + WorkMode.COOL;
       case this.platform.Characteristic.TargetHeaterCoolerState.HEAT:
-                this.device.state!.setmode = WorkMode.HEAT;
+        this.device.state!.setmode = WorkMode.HEAT;
         return 'MD' + WorkMode.HEAT;
       case this.platform.Characteristic.TargetHeaterCoolerState.AUTO:
-                this.device.state!.setmode = WorkMode.AUTO;
+        this.device.state!.setmode = WorkMode.AUTO;
         return 'MD' + WorkMode.AUTO;
     }
     return '';
@@ -64,7 +67,7 @@ export class CommandTargetHumidifierDehumidifierState extends AbstractCommand {
     const target = Number(this.value);
     switch (target) {
       case this.platform.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER:
-                this.device.state!.setmode = WorkMode.DRY;
+        this.device.state!.setmode = WorkMode.DRY;
         return 'MD' + WorkMode.DRY;
     }
     return '';
@@ -75,17 +78,17 @@ export class CommandRotationSpeed extends AbstractCommand {
   public execute(): string {
     const v = this.value as number;
     if (v === 0) {
-            this.device.state!.setfan = 0;
+      this.device.state!.setfan = 0;
     } else if (v <= 20) {
-            this.device.state!.setfan = 1;
+      this.device.state!.setfan = 1;
     } else if (v <= 40) {
-            this.device.state!.setfan = 2;
+      this.device.state!.setfan = 2;
     } else if (v <= 60) {
-            this.device.state!.setfan = 3;
+      this.device.state!.setfan = 3;
     } else if (v <= 80) {
-            this.device.state!.setfan = 5;
+      this.device.state!.setfan = 5;
     } else {
-            this.device.state!.setfan = 6;
+      this.device.state!.setfan = 6;
     }
     return 'FS' + this.device.state!.setfan;
   }
@@ -93,8 +96,8 @@ export class CommandRotationSpeed extends AbstractCommand {
 
 export class CommandTemperature extends AbstractCommand {
   public execute(): string {
-        this.device.state!.settemp = this.value as string;
-        return 'TS' + this.device.state!.settemp;
+    this.device.state!.settemp = this.value as string;
+    return 'TS' + this.device.state!.settemp;
   }
 }
 
@@ -104,8 +107,8 @@ export class CommandTemperature extends AbstractCommand {
  */
 export class CommandAirDirection extends AbstractCommand {
   public execute(): string {
-        this.device.state!.airdir = this.value as number;
-        return 'AD' + this.value;
+    this.device.state!.airdir = this.value as number;
+    return 'AD' + this.value;
   }
 }
 
@@ -115,8 +118,8 @@ export class CommandAirDirection extends AbstractCommand {
  */
 export class CommandAirDirectionH extends AbstractCommand {
   public execute(): string {
-        this.device.state!.airdirh = this.value as number;
-        return 'AH' + this.value;
+    this.device.state!.airdirh = this.value as number;
+    return 'AH' + this.value;
   }
 }
 
@@ -125,7 +128,7 @@ export class CommandAirDirectionH extends AbstractCommand {
  */
 export class CommandFanMode extends AbstractCommand {
   public execute(): string {
-        this.device.state!.setmode = WorkMode.FAN;
-        return 'MD' + WorkMode.FAN;
+    this.device.state!.setmode = WorkMode.FAN;
+    return 'MD' + WorkMode.FAN;
   }
 }

@@ -1,7 +1,7 @@
-import {API, Logger, PlatformConfig} from 'homebridge';
-import {Cookie} from 'tough-cookie';
-import {Account, Building, Capabilities, CommandResponse, State} from './data';
-import {Command} from './melviewCommand';
+import { API, Logger, PlatformConfig } from 'homebridge';
+import { Cookie } from 'tough-cookie';
+import { Account, Building, Capabilities, CommandResponse, State } from './data.js';
+import { Command } from './melviewCommand.js';
 
 const URL = 'https://api.melview.net/api/';
 const APP_VERSION = '5.3.1348';

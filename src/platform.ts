@@ -8,9 +8,9 @@ import {
   Service,
 } from 'homebridge';
 
-import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
-import {MelviewMitsubishiPlatformAccessory} from './platformAccessory';
-import {MelviewService} from './melviewService';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
+import { MelviewMitsubishiPlatformAccessory } from './platformAccessory.js';
+import { MelviewService } from './melviewService.js';
 
 /**
  * HomebridgePlatform

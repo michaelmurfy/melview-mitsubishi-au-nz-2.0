@@ -1,422 +1,425 @@
-import {MelviewMitsubishiHomebridgePlatform} from "../platform";
-import {CharacteristicValue, PlatformAccessory, Service, WithUUID} from "homebridge";
-import {Range, WorkMode} from "../data";
+import { CharacteristicValue, PlatformAccessory, Service, WithUUID } from 'homebridge';
+import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
+import { Range, WorkMode } from '../data.js';
+import { AbstractService } from './abstractService.js';
+import {
+  CommandAirDirection,
+  CommandPower,
+  CommandRotationSpeed,
+  CommandTargetHeaterCoolerState,
+  CommandTemperature,
+} from '../melviewCommand.js';
 
 const DEFAULT_TEMP_RANGE: Range = { min: 16, max: 30 };
 
 function getModeRange(
-    ranges: Record<string, Range> | undefined,
-    mode: WorkMode,
+  ranges: Record<string, Range> | undefined,
+  mode: WorkMode,
 ): Range {
-    const range = ranges?.[String(mode)];
-    if (range && typeof range.min === 'number' && typeof range.max === 'number') {
-        return range;
-    }
-    return DEFAULT_TEMP_RANGE;
+  const range = ranges?.[String(mode)];
+  if (range && typeof range.min === 'number' && typeof range.max === 'number') {
+    return range;
+  }
+  return DEFAULT_TEMP_RANGE;
 }
-import {AbstractService} from "./abstractService";
-import {
-    CommandPower,
-    CommandTargetHeaterCoolerState,
-    CommandTemperature,
-    CommandAirDirection,
-    CommandRotationSpeed,
-} from "../melviewCommand";
 
 export class HeatCoolService extends AbstractService {
-    private startupComplete = false;
-    private readonly effectiveConfig: { fanSpeed?: boolean; fanSpeedOnMainTile?: boolean; swingMode?: boolean };
+  private startupComplete = false;
+  private readonly effectiveConfig: { fanSpeed?: boolean; fanSpeedOnMainTile?: boolean; swingMode?: boolean };
 
-    constructor(
-        protected readonly platform: MelviewMitsubishiHomebridgePlatform,
-        protected readonly accessory: PlatformAccessory,
-    ) {
-        super(platform, accessory);
-        this.effectiveConfig = (this.accessory.context.effectiveConfig ?? this.platform.config) as {
-            fanSpeed?: boolean;
-            fanSpeedOnMainTile?: boolean;
-            swingMode?: boolean;
-        };
+  constructor(
+    protected readonly platform: MelviewMitsubishiHomebridgePlatform,
+    protected readonly accessory: PlatformAccessory,
+  ) {
+    super(platform, accessory);
+    this.effectiveConfig = (this.accessory.context.effectiveConfig ?? this.platform.config) as {
+      fanSpeed?: boolean;
+      fanSpeedOnMainTile?: boolean;
+      swingMode?: boolean;
+    };
 
-        this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState)
-            .onGet(this.getCurrentHeaterCoolerState.bind(this));
-        this.service.getCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState)
-            .onSet(this.setTargetHeaterCoolerState.bind(this))
-            .onGet(this.getTargetHeaterCoolerState.bind(this));
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState)
+      .onGet(this.getCurrentHeaterCoolerState.bind(this));
+    this.service.getCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState)
+      .onSet(this.setTargetHeaterCoolerState.bind(this))
+      .onGet(this.getTargetHeaterCoolerState.bind(this));
 
-        this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
-            .onGet(this.getCurrentTemperature.bind(this));
-        this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minValue = -50;
-        this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.maxValue = 70;
-        this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minStep = 0.5;
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
+      .onGet(this.getCurrentTemperature.bind(this));
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minValue = -50;
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.maxValue = 70;
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minStep = 0.5;
 
-        this.service.getCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature)
-            .onSet(this.setCoolingThresholdTemperature.bind(this))
-            .onGet(this.getCoolingThresholdTemperature.bind(this));;
-        const cool = getModeRange(this.device.state?.max, WorkMode.COOL);
-        this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue = cool.min;
-        this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue = cool.max;
-        this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minStep = 0.5;
+    this.service.getCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature)
+      .onSet(this.setCoolingThresholdTemperature.bind(this))
+      .onGet(this.getCoolingThresholdTemperature.bind(this));
+    const cool = getModeRange(this.device.state?.max, WorkMode.COOL);
+    this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue = cool.min;
+    this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue = cool.max;
+    this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minStep = 0.5;
 
-        this.service.getCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature)
-            .onSet(this.setHeatingThresholdTemperature.bind(this))
-            .onGet(this.getHeatingThresholdTemperature.bind(this));
-        const heat = getModeRange(this.device.state?.max, WorkMode.HEAT);
-        this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue = heat.min;
-        this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue = heat.max;
-        this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minStep = 0.5;
+    this.service.getCharacteristic(this.platform.Characteristic.HeatingThresholdTemperature)
+      .onSet(this.setHeatingThresholdTemperature.bind(this))
+      .onGet(this.getHeatingThresholdTemperature.bind(this));
+    const heat = getModeRange(this.device.state?.max, WorkMode.HEAT);
+    this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue = heat.min;
+    this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue = heat.max;
+    this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minStep = 0.5;
 
-        // Vertical airflow direction / swing — only on supported models and if config enabled
-        // Default to false for reliability (swingMode === true)
-        const swingModeEnabled = this.effectiveConfig.swingMode === true;
-        if (swingModeEnabled && (this.device.capabilities?.hasswing === 1 || this.device.capabilities?.hasairdir === 1)) {
-            this.service.getCharacteristic(this.platform.Characteristic.SwingMode)
-                .onSet(this.setSwingMode.bind(this))
-                .onGet(this.getSwingMode.bind(this));
+    // Vertical airflow direction / swing — only on supported models and if config enabled
+    // Default to false for reliability (swingMode === true)
+    const swingModeEnabled = this.effectiveConfig.swingMode === true;
+    if (swingModeEnabled && (this.device.capabilities?.hasswing === 1 || this.device.capabilities?.hasairdir === 1)) {
+      this.service.getCharacteristic(this.platform.Characteristic.SwingMode)
+        .onSet(this.setSwingMode.bind(this))
+        .onGet(this.getSwingMode.bind(this));
+    } else {
+      // Remove cached SwingMode characteristic when disabled/unavailable so HomeKit
+      // does not continue showing an Oscillate toggle from previous plugin versions.
+      if (this.service.testCharacteristic(this.platform.Characteristic.SwingMode)) {
+        const staleSwing = this.service.getCharacteristic(this.platform.Characteristic.SwingMode);
+        this.service.removeCharacteristic(staleSwing);
+      }
+    }
+
+    // Fan Speed Control on main AC tile — optional, disabled by default.
+    // Requires fanSpeed=true and fanSpeedOnMainTile=true.
+    if (this.effectiveConfig.fanSpeed && this.effectiveConfig.fanSpeedOnMainTile) {
+      this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
+      const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
+      rs.props.minValue = 0;
+      rs.props.maxValue = 100;
+      rs.props.minStep = 20;
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.RotationSpeed,
+        this.fanStageToPercent(this.device.state?.setfan ?? 0),
+      );
+      rs.onSet(this.setRotationSpeed.bind(this))
+        .onGet(this.getRotationSpeed.bind(this));
+      // Ignore onSet calls during 5-second startup window to prevent
+      // HomeKit controllers pushing stale cached values back to the unit.
+      setTimeout(() => {
+        this.startupComplete = true;
+      }, 5000);
+    }
+  }
+
+  protected getServiceType<T extends WithUUID<typeof Service>>(): T {
+    return this.platform.Service.HeaterCooler as T;
+  }
+
+  protected getDeviceRoom(): string {
+    return this.device.room;
+  }
+
+  protected getDeviceName(): string {
+    return this.device.name!;
+  }
+
+  private normalizeTargetHeaterCoolerState(value: CharacteristicValue): number | undefined {
+    const c = this.platform.Characteristic.TargetHeaterCoolerState;
+    const parsed = Number(value);
+    if (parsed === c.AUTO || parsed === c.HEAT || parsed === c.COOL) {
+      return parsed;
+    }
+    return undefined;
+  }
+
+  private async sendPowerCommandWithRetry(power: 0 | 1): Promise<void> {
+    const melviewService = this.platform.melviewService;
+    if (!melviewService) {
+      throw new Error('melviewService is not initialised');
+    }
+
+    try {
+      await melviewService.command(new CommandPower(power, this.device, this.platform));
+      return;
+    } catch (firstError) {
+      this.log.warn(`Power command PW${power} failed, retrying once:`, String(firstError));
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await melviewService.command(new CommandPower(power, this.device, this.platform));
+  }
+
+  async getActive(): Promise<CharacteristicValue> {
+    const power = this.device.state?.power ?? -1;
+    const mode = this.device.state?.setmode ?? -1;
+    this.log.debug('getActive power=', power, 'mode=', mode);
+    return power === 0
+      ? this.platform.Characteristic.Active.INACTIVE
+      : this.platform.Characteristic.Active.ACTIVE;
+  }
+
+  async setActive(value: CharacteristicValue): Promise<void> {
+    const c = this.platform.Characteristic;
+    const turningOn = this.isActiveOn(value);
+    this.log.info('Setting', this.getDeviceName(), turningOn ? 'ON' : 'OFF');
+    if (!this.platform.melviewService) {
+      this.log.error('melviewService is not initialised — check credentials in config');
+      return;
+    }
+    try {
+      if (turningOn) {
+        // Toggle power only. Avoid mode writes during tile toggle to prevent Melview command-chain rejections.
+        await this.sendPowerCommandWithRetry(1);
+
+        // Optimistically reflect ON state immediately in HomeKit.
+        this.service.updateCharacteristic(c.Active, c.Active.ACTIVE);
+        const targetState = await this.getTargetHeaterCoolerState();
+        this.service.updateCharacteristic(c.TargetHeaterCoolerState, targetState);
+        const currentState = await this.getCurrentHeaterCoolerState();
+        this.service.updateCharacteristic(c.CurrentHeaterCoolerState, currentState);
+      } else {
+        await this.sendPowerCommandWithRetry(0);
+
+        // Optimistically reflect OFF state immediately in HomeKit.
+        this.service.updateCharacteristic(c.Active, c.Active.INACTIVE);
+        this.service.updateCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.INACTIVE);
+      }
+    } catch (e) {
+      this.log.error('setActive command failed:', String(e));
+    }
+  }
+
+  async setCoolingThresholdTemperature(value: CharacteristicValue) {
+    this.platform.log.debug('setCoolingThresholdTemperature ->', value);
+    const minVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue!;
+    const maxVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue!;
+    if ((value as number) < minVal) {
+      this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
+      value = minVal;
+    } else if ((value as number) > maxVal) {
+      this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', maxVal);
+      value = maxVal;
+    }
+    try {
+      await this.platform.melviewService?.command(
+        new CommandTemperature(value, this.device, this.platform));
+    } catch (e) {
+      this.log.error('setCoolingThresholdTemperature command failed:', String(e));
+    }
+  }
+
+  async getCoolingThresholdTemperature(): Promise<CharacteristicValue> {
+    const temp = parseFloat(this.device.state!.settemp);
+    const minVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue!;
+    const maxVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue!;
+    if (temp < minVal) {
+      return minVal;
+    } else if (temp > maxVal) {
+      return maxVal;
+    }
+    return temp;
+  }
+
+  async setHeatingThresholdTemperature(value: CharacteristicValue) {
+    this.platform.log.debug('setHeatingThresholdTemperature:', value);
+    const minVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue!;
+    const maxVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue!;
+    if ((value as number) < minVal) {
+      this.platform.log.warn('setHeatingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
+      value = minVal;
+    } else if ((value as number) > maxVal) {
+      this.platform.log.warn('setHeatingThresholdTemperature ->', value, 'is illegal - updating to', maxVal);
+      value = maxVal;
+    }
+
+    try {
+      await this.platform.melviewService?.command(
+        new CommandTemperature(value, this.device, this.platform));
+    } catch (e) {
+      this.log.error('setHeatingThresholdTemperature command failed:', String(e));
+    }
+  }
+
+  async getHeatingThresholdTemperature(): Promise<CharacteristicValue> {
+    const temp = parseFloat(this.device.state!.settemp);
+    const minVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue!;
+    const maxVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue!;
+    if (temp < minVal) {
+      return minVal;
+    } else if (temp > maxVal) {
+      return maxVal;
+    }
+    return temp;
+  }
+
+  async getCurrentHeaterCoolerState(mode?: number): Promise<CharacteristicValue> {
+    if (!mode) {
+      mode = this.device.state!.setmode;
+    }
+    const c = this.platform.api.hap.Characteristic;
+    if (this.device.state?.power === 0) {
+      this.platform.log.debug('getCurrentHeaterCoolerState: INACTIVE (power off)');
+      return c.CurrentHeaterCoolerState.INACTIVE;
+    }
+    const roomTemp = parseFloat(this.device.state!.roomtemp);
+    const targTemp = parseFloat(this.device.state!.settemp);
+    switch (mode) {
+      case WorkMode.COOL:
+        this.platform.log.debug('getCurrentHeaterCoolerState: COOLING');
+        return c.CurrentHeaterCoolerState.COOLING;
+      case WorkMode.DRY:
+      case WorkMode.FAN:
+        this.platform.log.debug('getCurrentHeaterCoolerState: IDLE');
+        return c.CurrentHeaterCoolerState.IDLE;
+      case WorkMode.HEAT:
+        this.platform.log.debug('getCurrentHeaterCoolerState: HEATING');
+        return c.CurrentHeaterCoolerState.HEATING;
+      case WorkMode.AUTO:
+        if (roomTemp < targTemp) {
+          this.platform.log
+            .debug('getCurrentHeaterCoolerState (AUTO): HEATING, Target:',
+              targTemp, ' Room:', roomTemp);
+          return c.CurrentHeaterCoolerState.HEATING;
+        } else if (roomTemp > targTemp) {
+          this.platform.log
+            .debug('getCurrentHeaterCoolerState (AUTO): COOLING, Target:',
+              targTemp, ' Room:', roomTemp);
+          return c.CurrentHeaterCoolerState.COOLING;
         } else {
-            // Remove cached SwingMode characteristic when disabled/unavailable so HomeKit
-            // does not continue showing an Oscillate toggle from previous plugin versions.
-            if (this.service.testCharacteristic(this.platform.Characteristic.SwingMode)) {
-                const staleSwing = this.service.getCharacteristic(this.platform.Characteristic.SwingMode);
-                this.service.removeCharacteristic(staleSwing);
-            }
-        }
-
-        // Fan Speed Control on main AC tile — optional, disabled by default.
-        // Requires fanSpeed=true and fanSpeedOnMainTile=true.
-        if (this.effectiveConfig.fanSpeed && this.effectiveConfig.fanSpeedOnMainTile) {
-            this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
-            const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
-            rs.props.minValue = 0;
-            rs.props.maxValue = 100;
-            rs.props.minStep = 20;
-            this.service.updateCharacteristic(
-                this.platform.Characteristic.RotationSpeed,
-                this.fanStageToPercent(this.device.state?.setfan ?? 0),
-            );
-            rs.onSet(this.setRotationSpeed.bind(this))
-                .onGet(this.getRotationSpeed.bind(this));
-            // Ignore onSet calls during 5-second startup window to prevent
-            // HomeKit controllers pushing stale cached values back to the unit.
-            setTimeout(() => { this.startupComplete = true; }, 5000);
+          this.platform.log
+            .debug('getCurrentHeaterCoolerState (AUTO): IDLE, Target:',
+              targTemp, ' Room:', roomTemp);
+          return c.CurrentHeaterCoolerState.IDLE;
         }
     }
+    this.platform.log
+      .error('getCurrentHeaterCoolerState (UNKNOWN STATE)', mode);
+    return c.CurrentHeaterCoolerState.INACTIVE;
+  }
 
-    protected getServiceType<T extends WithUUID<typeof Service>>() : T {
-        return this.platform.Service.HeaterCooler as T;
+  async setTargetHeaterCoolerState(value: CharacteristicValue) {
+    this.platform.log.debug('setTargetHeaterCoolerState ->', value);
+    const normalizedTarget = this.normalizeTargetHeaterCoolerState(value);
+    if (normalizedTarget === undefined) {
+      this.log.warn('setTargetHeaterCoolerState skipped invalid value:', String(value));
+      return;
     }
-
-    protected getDeviceRoom(): string {
-        return this.device.room;
+    try {
+      await this.platform.melviewService?.command(
+        new CommandTargetHeaterCoolerState(normalizedTarget, this.device, this.platform));
+      const c = this.platform.Characteristic;
+      switch (normalizedTarget) {
+        case c.TargetHeaterCoolerState.COOL:
+          this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.COOLING);
+          return;
+        case c.TargetHeaterCoolerState.HEAT:
+          this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.HEATING);
+          return;
+        case c.TargetHeaterCoolerState.AUTO: {
+          const state = await this.getCurrentHeaterCoolerState(WorkMode.AUTO);
+          this.service.setCharacteristic(c.CurrentHeaterCoolerState, state);
+        }
+      }
+    } catch (e) {
+      this.log.error('setTargetHeaterCoolerState command failed:', String(e));
     }
+  }
 
-    protected getDeviceName() : string {
-        return this.device.name!;
-    }
-
-    private normalizeTargetHeaterCoolerState(value: CharacteristicValue): number | undefined {
-        const c = this.platform.Characteristic.TargetHeaterCoolerState;
-        const parsed = Number(value);
-        if (parsed === c.AUTO || parsed === c.HEAT || parsed === c.COOL) {
-            return parsed;
-        }
-        return undefined;
-    }
-
-    private async sendPowerCommandWithRetry(power: 0 | 1): Promise<void> {
-        const melviewService = this.platform.melviewService;
-        if (!melviewService) {
-            throw new Error('melviewService is not initialised');
-        }
-
-        try {
-            await melviewService.command(new CommandPower(power, this.device, this.platform));
-            return;
-        } catch (firstError) {
-            this.log.warn(`Power command PW${power} failed, retrying once:`, String(firstError));
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 350));
-        await melviewService.command(new CommandPower(power, this.device, this.platform));
-    }
-
-    async getActive(): Promise<CharacteristicValue> {
-        const power = this.device.state?.power ?? -1;
-        const mode = this.device.state?.setmode ?? -1;
-        this.log.debug('getActive power=', power, 'mode=', mode);
-        return power === 0
-            ? this.platform.Characteristic.Active.INACTIVE
-            : this.platform.Characteristic.Active.ACTIVE;
-    }
-
-    async setActive(value: CharacteristicValue) {
-        const c = this.platform.Characteristic;
-        const turningOn = this.isActiveOn(value);
-        this.log.info('Setting', this.getDeviceName(), turningOn ? 'ON' : 'OFF');
-        if (!this.platform.melviewService) {
-            this.log.error('melviewService is not initialised — check credentials in config');
-            return;
-        }
-        try {
-            if (turningOn) {
-                // Toggle power only. Avoid mode writes during tile toggle to prevent Melview command-chain rejections.
-                await this.sendPowerCommandWithRetry(1);
-
-                // Optimistically reflect ON state immediately in HomeKit.
-                this.service.updateCharacteristic(c.Active, c.Active.ACTIVE);
-                const targetState = await this.getTargetHeaterCoolerState();
-                this.service.updateCharacteristic(c.TargetHeaterCoolerState, targetState);
-                const currentState = await this.getCurrentHeaterCoolerState();
-                this.service.updateCharacteristic(c.CurrentHeaterCoolerState, currentState);
-            } else {
-                await this.sendPowerCommandWithRetry(0);
-
-                // Optimistically reflect OFF state immediately in HomeKit.
-                this.service.updateCharacteristic(c.Active, c.Active.INACTIVE);
-                this.service.updateCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.INACTIVE);
-            }
-        } catch (e) {
-            this.log.error('setActive command failed:', String(e));
-        }
-    }
-
-    async setCoolingThresholdTemperature(value: CharacteristicValue) {
-        this.platform.log.debug('setCoolingThresholdTemperature ->', value);
-        const minVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue!;
-        if ((value as number) < minVal) {
-            this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
-            value = minVal;
-        } else if ((value as number) > maxVal) {
-            this.platform.log.warn('setCoolingThresholdTemperature ->', value, 'is illegal - updating to', maxVal);
-            value = maxVal;
-        }
-        try {
-            await this.platform.melviewService?.command(
-                new CommandTemperature(value, this.device, this.platform));
-        } catch (e) {
-            this.log.error('setCoolingThresholdTemperature command failed:', String(e));
-        }
-    }
-
-    async getCoolingThresholdTemperature(): Promise<CharacteristicValue> {
-        const temp = parseFloat(this.device.state!.settemp)
-        const minVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characteristic.CoolingThresholdTemperature).props.maxValue!;
-        if (temp < minVal) {
-            return minVal;
-        } else if (temp > maxVal) {
-            return maxVal;
-        }
-        return temp;
-    }
-
-    async setHeatingThresholdTemperature(value: CharacteristicValue) {
-        this.platform.log.debug('setHeatingThresholdTemperature:', value);
-        const minVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue!;
-        if ((value as number) < minVal) {
-            this.platform.log.warn('setHeatingThresholdTemperature ->', value, 'is illegal - updating to', minVal);
-            value = minVal;
-        } else if ((value as number) > maxVal) {
-            this.platform.log.warn('setHeatingThresholdTemperature ->', value, 'is illegal - updating to', maxVal);
-            value = maxVal;
-        }
-
-        try {
-            await this.platform.melviewService?.command(
-                new CommandTemperature(value, this.device, this.platform));
-        } catch (e) {
-            this.log.error('setHeatingThresholdTemperature command failed:', String(e));
-        }
-    }
-
-    async getHeatingThresholdTemperature(): Promise<CharacteristicValue> {
-        const temp = parseFloat(this.device.state!.settemp)
-        const minVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.minValue!;
-        const maxVal = this.service.getCharacteristic(this.characteristic.HeatingThresholdTemperature).props.maxValue!;
-        if (temp < minVal) {
-            return minVal;
-        } else if (temp > maxVal) {
-            return maxVal;
-        }
-        return temp;
-    }
-
-    async getCurrentHeaterCoolerState(mode?:number): Promise<CharacteristicValue> {
-        if (!mode) {
-            mode = this.device.state!.setmode;
-        }
-        const c = this.platform.api.hap.Characteristic;
-        if (this.device.state?.power === 0) {
-            this.platform.log.debug('getCurrentHeaterCoolerState: INACTIVE (power off)');
-            return c.CurrentHeaterCoolerState.INACTIVE;
-        }
-        const roomTemp = parseFloat(this.device.state!.roomtemp);
-        const targTemp = parseFloat(this.device.state!.settemp);
-        switch (mode) {
-            case WorkMode.COOL:
-                this.platform.log.debug('getCurrentHeaterCoolerState: COOLING');
-                return c.CurrentHeaterCoolerState.COOLING;
-            case WorkMode.DRY:
-            case WorkMode.FAN:
-                this.platform.log.debug('getCurrentHeaterCoolerState: IDLE');
-                return c.CurrentHeaterCoolerState.IDLE;
-            case WorkMode.HEAT:
-                this.platform.log.debug('getCurrentHeaterCoolerState: HEATING');
-                return c.CurrentHeaterCoolerState.HEATING;
-            case WorkMode.AUTO:
-                if (roomTemp < targTemp) {
-                    this.platform.log
-                        .debug('getCurrentHeaterCoolerState (AUTO): HEATING, Target:',
-                            targTemp, ' Room:', roomTemp);
-                    return c.CurrentHeaterCoolerState.HEATING;
-                } else if (roomTemp > targTemp) {
-                    this.platform.log
-                        .debug('getCurrentHeaterCoolerState (AUTO): COOLING, Target:',
-                            targTemp, ' Room:', roomTemp);
-                    return c.CurrentHeaterCoolerState.COOLING;
-                } else {
-                    this.platform.log
-                        .debug('getCurrentHeaterCoolerState (AUTO): IDLE, Target:',
-                            targTemp, ' Room:', roomTemp);
-                    return c.CurrentHeaterCoolerState.IDLE;
-                }
-        }
-        this.platform.log
-            .error('getCurrentHeaterCoolerState (UNKNOWN STATE)', mode);
-        return c.CurrentHeaterCoolerState.INACTIVE;
-    }
-
-    async setTargetHeaterCoolerState(value: CharacteristicValue) {
-        this.platform.log.debug('setTargetHeaterCoolerState ->', value);
-        const normalizedTarget = this.normalizeTargetHeaterCoolerState(value);
-        if (normalizedTarget === undefined) {
-            this.log.warn('setTargetHeaterCoolerState skipped invalid value:', String(value));
-            return;
-        }
-        try {
-            await this.platform.melviewService?.command(
-                new CommandTargetHeaterCoolerState(normalizedTarget, this.device, this.platform));
-            const c = this.platform.Characteristic;
-            switch (normalizedTarget) {
-                case c.TargetHeaterCoolerState.COOL:
-                    this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.COOLING);
-                    return;
-                case c.TargetHeaterCoolerState.HEAT:
-                    this.service.setCharacteristic(c.CurrentHeaterCoolerState, c.CurrentHeaterCoolerState.HEATING);
-                    return;
-                case c.TargetHeaterCoolerState.AUTO:
-                    const state = await this.getCurrentHeaterCoolerState(WorkMode.AUTO);
-                    this.service.setCharacteristic(c.CurrentHeaterCoolerState, state);
-            }
-        } catch (e) {
-            this.log.error('setTargetHeaterCoolerState command failed:', String(e));
-        }
-    }
-
-    async getTargetHeaterCoolerState(): Promise<CharacteristicValue> {
-        const mode = this.device.state!.setmode;
-        const c = this.platform.api.hap.Characteristic;
-        switch (mode) {
-            case WorkMode.HEAT:
-                this.platform.log.debug('getTargetHeaterCoolerState -> HEAT');
-                return c.TargetHeaterCoolerState.HEAT;
-            case WorkMode.COOL: /*case WorkMode.FAN: case WorkMode.DRY:*/
-                this.platform.log.debug('getTargetHeaterCoolerState -> COOL');
-                return c.TargetHeaterCoolerState.COOL;
-            case WorkMode.AUTO:
-                this.platform.log.debug('getTargetHeaterCoolerState -> AUTO');
-                return c.TargetHeaterCoolerState.AUTO;
-        }
+  async getTargetHeaterCoolerState(): Promise<CharacteristicValue> {
+    const mode = this.device.state!.setmode;
+    const c = this.platform.api.hap.Characteristic;
+    switch (mode) {
+      case WorkMode.HEAT:
+        this.platform.log.debug('getTargetHeaterCoolerState -> HEAT');
+        return c.TargetHeaterCoolerState.HEAT;
+      case WorkMode.COOL: /* case WorkMode.FAN: case WorkMode.DRY: */
+        this.platform.log.debug('getTargetHeaterCoolerState -> COOL');
+        return c.TargetHeaterCoolerState.COOL;
+      case WorkMode.AUTO:
         this.platform.log.debug('getTargetHeaterCoolerState -> AUTO');
         return c.TargetHeaterCoolerState.AUTO;
     }
+    this.platform.log.debug('getTargetHeaterCoolerState -> AUTO');
+    return c.TargetHeaterCoolerState.AUTO;
+  }
 
-    async getCurrentTemperature(): Promise<CharacteristicValue> {
-        return parseFloat(this.device.state!.roomtemp);
+  async getCurrentTemperature(): Promise<CharacteristicValue> {
+    return parseFloat(this.device.state!.roomtemp);
+  }
+
+  async getSwingMode(): Promise<CharacteristicValue> {
+    const airdir = this.device.state?.airdir ?? 1;
+    return airdir === 0
+      ? this.platform.Characteristic.SwingMode.SWING_ENABLED
+      : this.platform.Characteristic.SwingMode.SWING_DISABLED;
+  }
+
+  async setSwingMode(value: CharacteristicValue) {
+    // Skip if unit is powered off - API rejects swing mode changes when off
+    if (this.device.state?.power === 0) {
+      this.platform.log.debug('setSwingMode skipped - unit is powered off');
+      return;
+    }
+    this.platform.log.debug('setSwingMode ->', value);
+    // airdir 0 = swing, 1 = first fixed position (top)
+    const airdir = value === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 0 : 1;
+    try {
+      await this.platform.melviewService?.command(
+        new CommandAirDirection(airdir, this.device, this.platform));
+    } catch (e) {
+      this.log.error('setSwingMode command failed:', String(e));
+    }
+  }
+
+  async getRotationSpeed(): Promise<CharacteristicValue> {
+    return this.fanStageToPercent(this.device.state?.setfan ?? 0);
+  }
+
+  async setRotationSpeed(value: CharacteristicValue) {
+    if (!this.startupComplete) {
+      this.log.debug('RotationSpeed onSet ignored during startup window (value:', value, ')');
+      return;
+    }
+    const newStage = this.percentToFanStage(value as number);
+    const currentStage = this.device.state?.setfan ?? 0;
+    if (newStage === currentStage) {
+      this.log.debug('RotationSpeed unchanged (stage', currentStage, '), skipping command');
+      return;
+    }
+    this.log.debug('RotationSpeed ->', value, '(stage', newStage, ')');
+    try {
+      await this.platform.melviewService?.command(
+        new CommandRotationSpeed(value, this.device, this.platform));
+    } catch (e) {
+      this.log.error('setRotationSpeed command failed:', String(e));
+    }
+  }
+
+  public syncFromState(): void {
+    super.syncFromState();
+    const c = this.platform.Characteristic;
+
+    void this.getCurrentHeaterCoolerState().then((currentState) => {
+      this.service.updateCharacteristic(c.CurrentHeaterCoolerState, currentState);
+    });
+    void this.getTargetHeaterCoolerState().then((targetState) => {
+      this.service.updateCharacteristic(c.TargetHeaterCoolerState, targetState);
+    });
+    this.service.updateCharacteristic(
+      c.CurrentTemperature,
+      parseFloat(this.device.state?.roomtemp ?? '0'),
+    );
+    void this.getCoolingThresholdTemperature().then((coolingTemp) => {
+      this.service.updateCharacteristic(c.CoolingThresholdTemperature, coolingTemp);
+    });
+    void this.getHeatingThresholdTemperature().then((heatingTemp) => {
+      this.service.updateCharacteristic(c.HeatingThresholdTemperature, heatingTemp);
+    });
+
+    if (this.service.testCharacteristic(c.SwingMode)) {
+      void this.getSwingMode().then((swingMode) => {
+        this.service.updateCharacteristic(c.SwingMode, swingMode);
+      });
     }
 
-    async getSwingMode(): Promise<CharacteristicValue> {
-        const airdir = this.device.state?.airdir ?? 1;
-        return airdir === 0
-            ? this.platform.Characteristic.SwingMode.SWING_ENABLED
-            : this.platform.Characteristic.SwingMode.SWING_DISABLED;
+    if (this.service.testCharacteristic(c.RotationSpeed)) {
+      this.service.updateCharacteristic(
+        c.RotationSpeed,
+        this.fanStageToPercent(this.device.state?.setfan ?? 0),
+      );
     }
-
-    async setSwingMode(value: CharacteristicValue) {
-        // Skip if unit is powered off - API rejects swing mode changes when off
-        if (this.device.state?.power === 0) {
-            this.platform.log.debug('setSwingMode skipped - unit is powered off');
-            return;
-        }
-        this.platform.log.debug('setSwingMode ->', value);
-        // airdir 0 = swing, 1 = first fixed position (top)
-        const airdir = value === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 0 : 1;
-        try {
-            await this.platform.melviewService?.command(
-                new CommandAirDirection(airdir, this.device, this.platform));
-        } catch (e) {
-            this.log.error('setSwingMode command failed:', String(e));
-        }
-    }
-
-    async getRotationSpeed(): Promise<CharacteristicValue> {
-        return this.fanStageToPercent(this.device.state?.setfan ?? 0);
-    }
-
-    async setRotationSpeed(value: CharacteristicValue) {
-        if (!this.startupComplete) {
-            this.log.debug('RotationSpeed onSet ignored during startup window (value:', value, ')');
-            return;
-        }
-        const newStage = this.percentToFanStage(value as number);
-        const currentStage = this.device.state?.setfan ?? 0;
-        if (newStage === currentStage) {
-            this.log.debug('RotationSpeed unchanged (stage', currentStage, '), skipping command');
-            return;
-        }
-        this.log.debug('RotationSpeed ->', value, '(stage', newStage, ')');
-        try {
-            await this.platform.melviewService?.command(
-                new CommandRotationSpeed(value, this.device, this.platform));
-        } catch (e) {
-            this.log.error('setRotationSpeed command failed:', String(e));
-        }
-    }
-
-    public syncFromState(): void {
-        super.syncFromState();
-        const c = this.platform.Characteristic;
-
-        void this.getCurrentHeaterCoolerState().then((currentState) => {
-            this.service.updateCharacteristic(c.CurrentHeaterCoolerState, currentState);
-        });
-        void this.getTargetHeaterCoolerState().then((targetState) => {
-            this.service.updateCharacteristic(c.TargetHeaterCoolerState, targetState);
-        });
-        this.service.updateCharacteristic(
-            c.CurrentTemperature,
-            parseFloat(this.device.state?.roomtemp ?? '0'),
-        );
-        void this.getCoolingThresholdTemperature().then((coolingTemp) => {
-            this.service.updateCharacteristic(c.CoolingThresholdTemperature, coolingTemp);
-        });
-        void this.getHeatingThresholdTemperature().then((heatingTemp) => {
-            this.service.updateCharacteristic(c.HeatingThresholdTemperature, heatingTemp);
-        });
-
-        if (this.service.testCharacteristic(c.SwingMode)) {
-            void this.getSwingMode().then((swingMode) => {
-                this.service.updateCharacteristic(c.SwingMode, swingMode);
-            });
-        }
-
-        if (this.service.testCharacteristic(c.RotationSpeed)) {
-            this.service.updateCharacteristic(
-                c.RotationSpeed,
-                this.fanStageToPercent(this.device.state?.setfan ?? 0),
-            );
-        }
-    }
+  }
 }

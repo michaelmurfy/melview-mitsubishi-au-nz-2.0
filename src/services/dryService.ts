@@ -1,107 +1,100 @@
-import {MelviewMitsubishiHomebridgePlatform} from "../platform";
-import {CharacteristicValue, PlatformAccessory, Service, WithUUID} from "homebridge";
-import {WorkMode} from "../data";
-import {AbstractService} from "./abstractService";
+import { CharacteristicValue, PlatformAccessory, Service, WithUUID } from 'homebridge';
+import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
+import { WorkMode } from '../data.js';
+import { AbstractService } from './abstractService.js';
 import {
-    CommandPower,
-    CommandTargetHumidifierDehumidifierState
-} from "../melviewCommand";
+  CommandPower,
+  CommandTargetHumidifierDehumidifierState,
+} from '../melviewCommand.js';
 
 export class DryService extends AbstractService {
-    public constructor(
-        protected readonly platform: MelviewMitsubishiHomebridgePlatform,
-        protected readonly accessory: PlatformAccessory,
-    ) {
-        super(platform, accessory);
+  public constructor(
+    protected readonly platform: MelviewMitsubishiHomebridgePlatform,
+    protected readonly accessory: PlatformAccessory,
+  ) {
+    super(platform, accessory);
 
-        this.service.getCharacteristic(this.platform.Characteristic.CurrentHumidifierDehumidifierState)
-            .onGet(this.getCurrentHumidifierDehumidifierState.bind(this));
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentHumidifierDehumidifierState)
+      .onGet(this.getCurrentHumidifierDehumidifierState.bind(this));
 
-        this.service.getCharacteristic(this.platform.Characteristic.TargetHumidifierDehumidifierState)
-            .onSet(this.setTargetHumidifierDehumidifierState.bind(this))
-            .onGet(this.getTargetHumidifierDehumidifierState.bind(this));
-        // this.service.getCharacteristic(this.platform.Characteristic.TargetHumidifierDehumidifierState).props
-        //     .minValue = this.characterisitc.TargetHumidifierDehumidifierState.DEHUMIDIFIER;
-        // this.service.getCharacteristic(this.platform.Characteristic.TargetHumidifierDehumidifierState).props
-        //     .maxValue = this.characterisitc.TargetHumidifierDehumidifierState.DEHUMIDIFIER;
-        // this.service.getCharacteristic(this.platform.Characteristic.TargetHumidifierDehumidifierState).props
-        //     .validValues = [this.characterisitc.TargetHumidifierDehumidifierState.DEHUMIDIFIER];
+    this.service.getCharacteristic(this.platform.Characteristic.TargetHumidifierDehumidifierState)
+      .onSet(this.setTargetHumidifierDehumidifierState.bind(this))
+      .onGet(this.getTargetHumidifierDehumidifierState.bind(this));
+  }
+
+  async getActive(): Promise<CharacteristicValue> {
+    this.log.info('GET DRY ACTIVE [', this.getDeviceName(), '] =', this.device.state!.power, 'DRY =', this.device.state?.setmode);
+    if (this.device.state?.setmode !== WorkMode.DRY) {
+      return this.platform.Characteristic.Active.INACTIVE;
     }
+    return this.device.state!.power === 0
+      ? this.platform.Characteristic.Active.INACTIVE
+      : this.platform.Characteristic.Active.ACTIVE;
+  }
 
-    async getActive(): Promise<CharacteristicValue> {
-        this.log.info('GET DRY ACTIVE [', this.getDeviceName(), '] =', this.device.state!.power, 'DRY =', this.device.state?.setmode);
-        if (this.device.state?.setmode !== WorkMode.DRY) {
-            return this.platform.Characteristic.Active.INACTIVE;
-        }
-        return this.device.state!.power === 0
-            ? this.platform.Characteristic.Active.INACTIVE
-            : this.platform.Characteristic.Active.ACTIVE;
+  async setActive(value: CharacteristicValue): Promise<void> {
+    this.log.info('Setting', this.getDeviceName(), '=', value === 0 ? 'OFF' : 'ON');
+    try {
+      await this.platform.melviewService?.command(
+        new CommandPower(value, this.device, this.platform),
+        new CommandTargetHumidifierDehumidifierState(
+          this.platform.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER,
+          this.device,
+          this.platform));
+    } catch (e) {
+      this.log.error('setActive (Dry Mode) command failed:', String(e));
     }
+  }
 
-    async setActive(value: CharacteristicValue) {
-        this.log.info('Setting', this.getDeviceName(), '=', value === 0 ? 'OFF' : 'ON');
-        try {
-            await this.platform.melviewService?.command(
-                new CommandPower(value, this.device, this.platform),
-                new CommandTargetHumidifierDehumidifierState(
-                    this.platform.Characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER,
-                    this.device,
-                    this.platform));
-        } catch (e) {
-            this.log.error('setActive (Dry Mode) command failed:', String(e));
-        }
+  protected getServiceType<T extends WithUUID<typeof Service>>(): T {
+    return this.platform.Service.HumidifierDehumidifier as T;
+  }
+
+  protected getDeviceRoom(): string {
+    return this.device.room + ' Dehumidifier';
+  }
+
+  protected getDeviceName(): string {
+    return this.device.name!;
+  }
+
+  async getCurrentHumidifierDehumidifierState(): Promise<CharacteristicValue> {
+    const mode = this.device.state!.setmode;
+    const c = this.platform.api.hap.Characteristic;
+    if (this.device.state?.power === 0) {
+      return c.CurrentHumidifierDehumidifierState.INACTIVE;
     }
-
-    protected getServiceType<T extends WithUUID<typeof Service>>(): T {
-        return this.platform.Service.HumidifierDehumidifier as T;
+    switch (mode) {
+      case WorkMode.DRY:
+        return c.CurrentHumidifierDehumidifierState.DEHUMIDIFYING;
+      default:
+        return c.CurrentHumidifierDehumidifierState.IDLE;
     }
+  }
 
-    protected getDeviceRoom(): string {
-        return this.device.room + " Dehumidifier";
+  async setTargetHumidifierDehumidifierState(value: CharacteristicValue) {
+    this.log.info('Set ', this.device.room, '=', 'DRY');
+    try {
+      await this.platform.melviewService?.command(
+        new CommandTargetHumidifierDehumidifierState(value, this.device, this.platform));
+    } catch (e) {
+      this.log.error('setTargetHumidifierDehumidifierState command failed:', String(e));
     }
+  }
 
-    protected getDeviceName(): string {
-        return this.device.name!;
-    }
+  async getTargetHumidifierDehumidifierState(): Promise<CharacteristicValue> {
+    return this.characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER;
+  }
 
-    async getCurrentHumidifierDehumidifierState(): Promise<CharacteristicValue> {
-        const mode = this.device.state!.setmode;
-        const c = this.platform.api.hap.Characteristic;
-        if (this.device.state?.power === 0) {
-            return c.CurrentHumidifierDehumidifierState.INACTIVE;
-        }
-        switch (mode) {
-            case WorkMode.DRY:
-                return c.CurrentHumidifierDehumidifierState.DEHUMIDIFYING;
-            default:
-                return c.CurrentHumidifierDehumidifierState.IDLE;
-
-        }
-    }
-
-    async setTargetHumidifierDehumidifierState(value: CharacteristicValue) {
-        this.log.info('Set ', this.device.room, '=', 'DRY');
-        try {
-            await this.platform.melviewService?.command(
-                new CommandTargetHumidifierDehumidifierState(value, this.device, this.platform));
-        } catch (e) {
-            this.log.error('setTargetHumidifierDehumidifierState command failed:', String(e));
-        }
-    }
-
-    async getTargetHumidifierDehumidifierState(): Promise<CharacteristicValue> {
-        return this.characteristic.TargetHumidifierDehumidifierState.DEHUMIDIFIER;
-    }
-
-    public syncFromState(): void {
-        super.syncFromState();
-        const c = this.platform.Characteristic;
-        void this.getCurrentHumidifierDehumidifierState().then((currentState) => {
-            this.service.updateCharacteristic(c.CurrentHumidifierDehumidifierState, currentState);
-        });
-        this.service.updateCharacteristic(
-            c.TargetHumidifierDehumidifierState,
-            c.TargetHumidifierDehumidifierState.DEHUMIDIFIER,
-        );
-    }
+  public syncFromState(): void {
+    super.syncFromState();
+    const c = this.platform.Characteristic;
+    void this.getCurrentHumidifierDehumidifierState().then((currentState) => {
+      this.service.updateCharacteristic(c.CurrentHumidifierDehumidifierState, currentState);
+    });
+    this.service.updateCharacteristic(
+      c.TargetHumidifierDehumidifierState,
+      c.TargetHumidifierDehumidifierState.DEHUMIDIFIER,
+    );
+  }
 }
