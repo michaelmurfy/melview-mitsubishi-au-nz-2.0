@@ -94,21 +94,11 @@ export class MelviewMitsubishiPlatformAccessory {
     }
 
     /*********************************************************
-         * Fan-Only Mode / Fan Speed Capability
+         * Fan-Only Mode (opt-in). Separate Fanv2 service; not shown on the AC tile.
          *********************************************************/
-    if (this.effectiveConfig.fanMode || this.effectiveConfig.fanSpeed) {
+    if (this.effectiveConfig.fanMode) {
       this.fanModeService = new FanModeService(this.platform, this.accessory);
       this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
-      // Remove any cached RotationSpeed on the Fanv2 service when fan speed is disabled.
-      if (!this.effectiveConfig.fanSpeed) {
-        if (this.fanModeService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
-          const staleRs = this.fanModeService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
-          this.fanModeService.getService().removeCharacteristic(staleRs);
-          this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [REMOVED]');
-        }
-      } else {
-        this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [COMPLETED]');
-      }
     } else {
       const stale = this.accessory.getServiceById(this.platform.Service.Fanv2, 'fan')
         || this.accessory.getService(this.platform.Service.Fanv2);
@@ -153,8 +143,8 @@ export class MelviewMitsubishiPlatformAccessory {
       }
     }
 
-    // Group optional modes onto the main AC card (HomeKit linked services).
-    this.linkServicesToPrimaryCard();
+    // Keep the HomeKit tile as a single HeaterCooler (no linked Dry/Fan/etc. clutter).
+    this.acService.getService().setPrimaryService(true);
 
     // Fault/health is represented on the main AC tile via StatusFault.
     // Remove any stale dedicated fault sensor service from older versions.
@@ -221,53 +211,23 @@ export class MelviewMitsubishiPlatformAccessory {
     const caps = this.accessory.context.device?.capabilities;
     const capabilityMode = this.resolveCapabilityMode(override);
     const auto = capabilityMode === 'auto';
-    const manualDry = this.resolveBoolean('dry', false, override);
-    const manualOutdoor = this.resolveBoolean('outdoorTemp', false, override);
-    const manualAirflowH = this.resolveBoolean('airflowH', false, override);
+    // Auto only adds native HeaterCooler fan speed. Extra services stay opt-in
+    // so the Home app tile is not crowded with Dry/Fan/Swing switches.
+    const fanSpeed = this.resolveBoolean('fanSpeed', false, override)
+      || (auto && (caps?.fanstage ?? 0) > 0);
 
     return {
       capabilityMode,
       preferLocalControl: this.resolveBoolean('preferLocalControl', true, override),
-      // Auto follows Melview hardware flags; explicit true still forces a feature on.
-      dry: manualDry || (auto && caps?.hasdrymode === 1),
-      // Fan-only mode is always available via Melview WorkMode.FAN — expose on the same card in auto.
-      fanMode: this.resolveBoolean('fanMode', false, override) || auto,
-      airflowH: manualAirflowH || (auto && caps?.hasairdirh === 1),
+      dry: this.resolveBoolean('dry', false, override),
+      fanMode: this.resolveBoolean('fanMode', false, override),
+      airflowH: this.resolveBoolean('airflowH', false, override),
       swingMode: this.resolveBoolean('swingMode', false, override),
-      // Fan speed on the main HeaterCooler tile in auto (same card, not a second accessory).
-      fanSpeed: this.resolveBoolean('fanSpeed', false, override) || (auto && (caps?.fanstage ?? 0) > 0),
-      fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override) || auto,
-      outdoorTemp: manualOutdoor || (auto && caps?.hasoutdoortemp === 1),
+      fanSpeed,
+      fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', true, override) || fanSpeed,
+      outdoorTemp: this.resolveBoolean('outdoorTemp', false, override),
       pollIntervalSeconds: this.resolveNumber('pollIntervalSeconds', 30, override),
     };
-  }
-
-  private linkServicesToPrimaryCard(): void {
-    const primary = this.acService.getService();
-    primary.setPrimaryService(true);
-
-    const linked = [
-      this.dryService?.getService(),
-      this.fanModeService?.getService(),
-      this.horizontalSwingService?.getService(),
-      this.outdoorTemperatureService?.getService(),
-    ].filter((service): service is NonNullable<typeof service> => !!service);
-
-    for (const service of linked) {
-      try {
-        primary.addLinkedService(service);
-      } catch (e) {
-        this.platform.log.debug('addLinkedService skipped:', String(e));
-      }
-    }
-
-    if (linked.length > 0) {
-      this.platform.log.info(
-        'HomeKit card:',
-        this.accessory.context.device.room,
-        `primary HeaterCooler + ${linked.length} linked service(s)`,
-      );
-    }
   }
 
   private resolveCapabilityMode(override?: Record<string, unknown>): 'auto' | 'manual' {

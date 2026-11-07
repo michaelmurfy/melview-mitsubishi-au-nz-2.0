@@ -23,12 +23,12 @@
         "required": true
       },
       "capabilityMode": {
-        "title": "Feature mode",
+        "title": "Main tile",
         "type": "string",
         "default": "auto",
         "oneOf": [
-          { "title": "Auto (from Melview capabilities)", "enum": ["auto"] },
-          { "title": "Manual (toggles below)", "enum": ["manual"] }
+          { "title": "Auto (fan speed on AC tile when supported)", "enum": ["auto"] },
+          { "title": "Manual", "enum": ["manual"] }
         ]
       },
       "preferLocalControl": {
@@ -43,40 +43,40 @@
         "minimum": 5,
         "maximum": 300
       },
+      "fanSpeed": {
+        "title": "Fan speed on AC tile",
+        "type": "boolean",
+        "default": false
+      },
+      "swingMode": {
+        "title": "Vertical swing on AC tile",
+        "type": "boolean",
+        "default": false
+      },
       "dry": {
-        "title": "Dry mode",
-        "type": "boolean",
-        "default": false
-      },
-      "outdoorTemp": {
-        "title": "Outdoor temperature",
-        "type": "boolean",
-        "default": false
-      },
-      "airflowH": {
-        "title": "Horizontal swing",
+        "title": "Dry mode (extra service)",
         "type": "boolean",
         "default": false
       },
       "fanMode": {
-        "title": "Fan-only mode",
+        "title": "Fan-only mode (extra service)",
         "type": "boolean",
         "default": false
       },
-      "fanSpeed": {
-        "title": "Fan speed",
+      "airflowH": {
+        "title": "Horizontal swing (extra service)",
+        "type": "boolean",
+        "default": false
+      },
+      "outdoorTemp": {
+        "title": "Outdoor temperature (extra service)",
         "type": "boolean",
         "default": false
       },
       "fanSpeedOnMainTile": {
         "title": "Fan speed on main tile",
         "type": "boolean",
-        "default": false
-      },
-      "swingMode": {
-        "title": "Vertical swing",
-        "type": "boolean",
-        "default": false
+        "default": true
       },
       "perUnitOverrides": {
         "title": "Per-unit overrides",
@@ -90,7 +90,7 @@
               "required": true
             },
             "capabilityMode": {
-              "title": "Feature mode",
+              "title": "Main tile",
               "type": "string",
               "oneOf": [
                 { "title": "Auto", "enum": ["auto"] },
@@ -101,32 +101,32 @@
               "title": "LAN /smart hop",
               "type": "boolean"
             },
+            "fanSpeed": {
+              "title": "Fan speed on AC tile",
+              "type": "boolean"
+            },
+            "swingMode": {
+              "title": "Vertical swing on AC tile",
+              "type": "boolean"
+            },
             "dry": {
               "title": "Dry mode",
-              "type": "boolean"
-            },
-            "outdoorTemp": {
-              "title": "Outdoor temperature",
-              "type": "boolean"
-            },
-            "airflowH": {
-              "title": "Horizontal swing",
               "type": "boolean"
             },
             "fanMode": {
               "title": "Fan-only mode",
               "type": "boolean"
             },
-            "fanSpeed": {
-              "title": "Fan speed",
+            "airflowH": {
+              "title": "Horizontal swing",
+              "type": "boolean"
+            },
+            "outdoorTemp": {
+              "title": "Outdoor temperature",
               "type": "boolean"
             },
             "fanSpeedOnMainTile": {
               "title": "Fan speed on main tile",
-              "type": "boolean"
-            },
-            "swingMode": {
-              "title": "Vertical swing",
               "type": "boolean"
             },
             "pollIntervalSeconds": {
@@ -149,20 +149,12 @@
     {
       "type": "fieldset",
       "title": "Control",
-      "items": ["capabilityMode", "preferLocalControl", "pollIntervalSeconds"]
+      "items": ["capabilityMode", "preferLocalControl", "pollIntervalSeconds", "fanSpeed", "swingMode"]
     },
     {
       "type": "fieldset",
-      "title": "Manual features",
-      "items": [
-        "dry",
-        "outdoorTemp",
-        "airflowH",
-        "fanMode",
-        "fanSpeed",
-        "fanSpeedOnMainTile",
-        "swingMode"
-      ]
+      "title": "Extra services (off by default)",
+      "items": ["dry", "fanMode", "airflowH", "outdoorTemp"]
     },
     {
       "key": "perUnitOverrides",
@@ -173,13 +165,12 @@
         "unitId",
         "capabilityMode",
         "preferLocalControl",
-        "dry",
-        "outdoorTemp",
-        "airflowH",
-        "fanMode",
         "fanSpeed",
-        "fanSpeedOnMainTile",
         "swingMode",
+        "dry",
+        "fanMode",
+        "airflowH",
+        "outdoorTemp",
         "pollIntervalSeconds"
       ]
     }

@@ -113,24 +113,18 @@ Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` → 
 
 ## HomeKit Services
 
-Each AC unit is one **Air Conditioner** accessory. Optional modes (Dry, Fan, horizontal
-swing, outdoor temperature) are added as **linked services** on that same accessory so
-they appear on the main HomeKit card / detail sheet — not as separate orphan tiles.
+Each AC unit is one **Air Conditioner** accessory with a single HeaterCooler service by
+default (power, heat/cool/auto, temperatures, optional fan speed). Extra modes such as
+Dry or Fan-only are off unless you enable them; HomeKit has no Dry target on HeaterCooler.
 
-HomeKit’s HeaterCooler target modes are only Auto / Heat / Cool, so Dry is exposed as a
-linked Humidifier/Dehumidifier service named **Dry** (Apple has no Dry enum on HeaterCooler).
+### Heater / Cooler
 
-### Heater / Cooler (primary service)
-
-The main service. Provides:
 - Active (power)
-- Current state (idle / heating / cooling)
-- Target state (auto / heat / cool)
-- Current temperature (°C)
-- Heating / cooling threshold temperatures
-- Status fault (`StatusFault`) — issue when the unit faults or is offline
-- Fan speed (`RotationSpeed`) — on the main tile when enabled / auto mode
-- Swing mode (vertical) — when `swingMode: true` on supported models
+- Current / target state (auto / heat / cool)
+- Current and threshold temperatures (°C)
+- Status fault when offline or unit fault
+- Fan speed on the main tile in auto mode when the unit reports fan stages
+- Vertical swing when `swingMode` is enabled
 
 ### Fan speed mapping
 
