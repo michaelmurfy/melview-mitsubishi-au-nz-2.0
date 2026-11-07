@@ -83,7 +83,8 @@ export class MelviewMitsubishiPlatformAccessory {
       this.dryService = new DryService(this.platform, this.accessory);
       this.platform.log.info('DRY Capability:', device.room, ' [COMPLETED]');
     } else {
-      const stale = this.accessory.getService(this.platform.Service.HumidifierDehumidifier);
+      const stale = this.accessory.getServiceById(this.platform.Service.HumidifierDehumidifier, 'dry')
+        || this.accessory.getService(this.platform.Service.HumidifierDehumidifier);
       if (stale) {
         this.accessory.removeService(stale);
         this.platform.log.info('DRY Capability:', device.room, ' [REMOVED]');
@@ -109,7 +110,8 @@ export class MelviewMitsubishiPlatformAccessory {
         this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [COMPLETED]');
       }
     } else {
-      const stale = this.accessory.getService(this.platform.Service.Fanv2);
+      const stale = this.accessory.getServiceById(this.platform.Service.Fanv2, 'fan')
+        || this.accessory.getService(this.platform.Service.Fanv2);
       if (stale) {
         this.accessory.removeService(stale);
         this.platform.log.info('FAN MODE Capability:', device.room, ' [REMOVED]');
@@ -123,7 +125,8 @@ export class MelviewMitsubishiPlatformAccessory {
     if (this.effectiveConfig.airflowH && device.capabilities?.hasairdirh === 1) {
       this.horizontalSwingService = new HorizontalSwingService(this.platform, this.accessory);
     } else {
-      const stale = this.accessory.getService(this.platform.Service.Switch);
+      const stale = this.accessory.getServiceById(this.platform.Service.Switch, 'airflow-h')
+        || this.accessory.getService(this.platform.Service.Switch);
       if (stale) {
         this.accessory.removeService(stale);
         this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [REMOVED]');
@@ -140,7 +143,8 @@ export class MelviewMitsubishiPlatformAccessory {
       this.outdoorTemperatureService = new OutdoorTemperatureService(this.platform, this.accessory);
       this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [COMPLETED]');
     } else {
-      const stale = this.accessory.getService(this.platform.Service.TemperatureSensor);
+      const stale = this.accessory.getServiceById(this.platform.Service.TemperatureSensor, 'outdoor')
+        || this.accessory.getService(this.platform.Service.TemperatureSensor);
       if (stale) {
         this.accessory.removeService(stale);
         this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [REMOVED]');
@@ -148,6 +152,9 @@ export class MelviewMitsubishiPlatformAccessory {
         this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [UNAVAILABLE]');
       }
     }
+
+    // Group optional modes onto the main AC card (HomeKit linked services).
+    this.linkServicesToPrimaryCard();
 
     // Fault/health is represented on the main AC tile via StatusFault.
     // Remove any stale dedicated fault sensor service from older versions.
@@ -223,14 +230,44 @@ export class MelviewMitsubishiPlatformAccessory {
       preferLocalControl: this.resolveBoolean('preferLocalControl', true, override),
       // Auto follows Melview hardware flags; explicit true still forces a feature on.
       dry: manualDry || (auto && caps?.hasdrymode === 1),
-      fanMode: this.resolveBoolean('fanMode', false, override),
+      // Fan-only mode is always available via Melview WorkMode.FAN — expose on the same card in auto.
+      fanMode: this.resolveBoolean('fanMode', false, override) || auto,
       airflowH: manualAirflowH || (auto && caps?.hasairdirh === 1),
       swingMode: this.resolveBoolean('swingMode', false, override),
-      fanSpeed: this.resolveBoolean('fanSpeed', false, override),
-      fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override),
+      // Fan speed on the main HeaterCooler tile in auto (same card, not a second accessory).
+      fanSpeed: this.resolveBoolean('fanSpeed', false, override) || (auto && (caps?.fanstage ?? 0) > 0),
+      fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override) || auto,
       outdoorTemp: manualOutdoor || (auto && caps?.hasoutdoortemp === 1),
       pollIntervalSeconds: this.resolveNumber('pollIntervalSeconds', 30, override),
     };
+  }
+
+  private linkServicesToPrimaryCard(): void {
+    const primary = this.acService.getService();
+    primary.setPrimaryService(true);
+
+    const linked = [
+      this.dryService?.getService(),
+      this.fanModeService?.getService(),
+      this.horizontalSwingService?.getService(),
+      this.outdoorTemperatureService?.getService(),
+    ].filter((service): service is NonNullable<typeof service> => !!service);
+
+    for (const service of linked) {
+      try {
+        primary.addLinkedService(service);
+      } catch (e) {
+        this.platform.log.debug('addLinkedService skipped:', String(e));
+      }
+    }
+
+    if (linked.length > 0) {
+      this.platform.log.info(
+        'HomeKit card:',
+        this.accessory.context.device.room,
+        `primary HeaterCooler + ${linked.length} linked service(s)`,
+      );
+    }
   }
 
   private resolveCapabilityMode(override?: Record<string, unknown>): 'auto' | 'manual' {

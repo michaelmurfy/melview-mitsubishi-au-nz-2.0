@@ -113,20 +113,24 @@ Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` → 
 
 ## HomeKit Services
 
-Each AC unit is registered as an **Air Conditioner** accessory and can expose up to
-four HomeKit services depending on the unit's capabilities and your configuration.
+Each AC unit is one **Air Conditioner** accessory. Optional modes (Dry, Fan, horizontal
+swing, outdoor temperature) are added as **linked services** on that same accessory so
+they appear on the main HomeKit card / detail sheet — not as separate orphan tiles.
 
-### Heater / Cooler (always present)
+HomeKit’s HeaterCooler target modes are only Auto / Heat / Cool, so Dry is exposed as a
+linked Humidifier/Dehumidifier service named **Dry** (Apple has no Dry enum on HeaterCooler).
+
+### Heater / Cooler (primary service)
 
 The main service. Provides:
 - Active (power)
 - Current state (idle / heating / cooling)
 - Target state (auto / heat / cool)
-- Current temperature
-- Heating threshold temperature
-- Cooling threshold temperature
-- Status fault (`StatusFault`) — shows an issue when the unit reports an error or is offline
-- Swing mode (vertical) — shown automatically on supported models
+- Current temperature (°C)
+- Heating / cooling threshold temperatures
+- Status fault (`StatusFault`) — issue when the unit faults or is offline
+- Fan speed (`RotationSpeed`) — on the main tile when enabled / auto mode
+- Swing mode (vertical) — when `swingMode: true` on supported models
 
 ### Fan speed mapping
 
@@ -159,55 +163,36 @@ reliability. If you don't enable `swingMode` in the config, simply set your unit
 **Auto** swing mode using your physical remote or the Mitsubishi app, and it will
 automatically manage vertical airflow without HomeKit involvement.
 
-### Outdoor Temperature Sensor (`outdoorTemp: true`)
+### Outdoor temperature
 
-When enabled, a read-only **Temperature Sensor** tile is added alongside the main
-Heater/Cooler accessory showing the live outdoor unit temperature. The sensor is
-only registered when the Melview API returns a numeric value for that unit — if your
-unit does not report outdoor temperature it is silently skipped even when the option
-is on.
+Linked **Outdoor** temperature sensor on the same accessory when Melview reports
+`hasoutdoortemp` (or `outdoorTemp` is forced on in manual mode).
 
-Health/offline state is integrated into the main **Air Conditioner** tile via
-`StatusFault` instead of a separate health accessory tile.
+Health/offline state stays on the main tile via `StatusFault`.
 
-### Dehumidifier / Dry mode (`dry: true`)
+### Dry mode
 
-When enabled, a **Humidifier / Dehumidifier** accessory is added for units that report
-`hasdrymode` in their capabilities. It provides:
-- Active (power, forces DRY mode on activation)
-- Fan speed (shares the same fan speed slider)
+Linked **Dry** (Humidifier/Dehumidifier) service for units with `hasdrymode`. Turning
+it Active powers the unit into Melview dry mode. In `capabilityMode: auto` this is
+enabled automatically.
 
-This mode dehumidifies the room without the full heating/cooling cycle.
+### Fan-only mode
 
-### Fan-only mode (`fanMode: true`)
+Linked **Fan** service. Activating it runs Melview fan-only mode. Enabled automatically
+in `capabilityMode: auto`.
 
-When enabled, a **Fan** accessory is added. Activating it powers the unit in fan-only
-mode (circulates air, no temperature conditioning).
+### Fan speed control
 
-### Fan speed control (`fanSpeed: true`, experimental)
+On the **main HeaterCooler card** when auto mode detects fan stages (or when
+`fanSpeed` / `fanSpeedOnMainTile` are set). See the mapping table above.
 
-Disabled by default. When enabled, a fan speed slider (Auto / Low / Medium / High)
-appears on a separate **Fan** service, which is added automatically even if
-`fanMode` is left disabled.
+A 5-second startup guard ignores HomeKit RotationSpeed writes after bridge reconnect
+to reduce cached-value fan-speed jumps.
 
-To also show fan speed on the main **Air Conditioner** tile, set:
-- `fanSpeed: true`
-- `fanSpeedOnMainTile: true`
+### Horizontal airflow swing
 
-> **Note:** Due to the way HomeKit caches characteristic values, enabling fan speed
-> can cause the unit to briefly jump to a high fan stage on startup. The plugin
-> includes a 5-second startup guard that ignores incoming set commands during
-> bridge reconnect, which mitigates but may not fully eliminate this behaviour on
-> all controllers.
-
-### Horizontal airflow swing (`airflowH: true`)
-
-When enabled and the unit reports `hasairdirh`, a **Switch** accessory is added:
-- **ON** → horizontal louvre sweeps continuously left–right
-- **OFF** → louvre returns to centre fixed position
-
-Horizontal airflow swing is not supported by many Mitsubishi units, so this option
-may not appear even when enabled.
+Linked **Horizontal Swing** switch when Melview reports `hasairdirh` (or `airflowH`
+is forced on). ON = left–right sweep; OFF = centre.
 
 ## State polling
 

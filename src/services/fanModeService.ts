@@ -13,7 +13,7 @@ import {
  * Activating this service powers on the unit and sets mode to WorkMode.FAN (7).
  */
 export class FanModeService extends AbstractService {
-  private readonly effectiveConfig: { fanSpeed?: boolean };
+  private readonly effectiveConfig: { fanSpeed?: boolean; fanSpeedOnMainTile?: boolean };
 
   public constructor(
     protected readonly platform: MelviewMitsubishiHomebridgePlatform,
@@ -22,15 +22,11 @@ export class FanModeService extends AbstractService {
     super(platform, accessory);
     this.effectiveConfig = (this.accessory.context.effectiveConfig ?? this.platform.config) as {
       fanSpeed?: boolean;
+      fanSpeedOnMainTile?: boolean;
     };
 
-    this.service.setCharacteristic(
-      this.platform.Characteristic.Name,
-      `${this.device.name} Fan Speed`,
-    );
-
-    // Fan Speed Control — gated by config.fanSpeed (optional, default off)
-    if (this.effectiveConfig.fanSpeed) {
+    // Fan speed lives on the main HeaterCooler tile when fanSpeedOnMainTile is on.
+    if (this.effectiveConfig.fanSpeed && !this.effectiveConfig.fanSpeedOnMainTile) {
       this.service.addOptionalCharacteristic(this.platform.Characteristic.RotationSpeed);
       const rs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
       rs.props.minValue = 0;
@@ -42,6 +38,9 @@ export class FanModeService extends AbstractService {
       );
       rs.onSet(this.setRotationSpeed.bind(this))
         .onGet(this.getRotationSpeed.bind(this));
+    } else if (this.service.testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
+      const staleRs = this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed);
+      this.service.removeCharacteristic(staleRs);
     }
   }
 
@@ -49,8 +48,16 @@ export class FanModeService extends AbstractService {
     return this.platform.Service.Fanv2 as T;
   }
 
+  protected getServiceDisplayName(): string {
+    return 'Fan';
+  }
+
+  protected getServiceSubtype(): string {
+    return 'fan';
+  }
+
   protected getDeviceRoom(): string {
-    return this.device.room + ' Fan';
+    return this.device.room;
   }
 
   protected getDeviceName(): string {
@@ -106,10 +113,14 @@ export class FanModeService extends AbstractService {
   }
 
   public syncFromState(): void {
-    super.syncFromState();
-    if (this.service.testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
+    const c = this.platform.Characteristic;
+    // Do not use AbstractService.syncFromState — Active is mode-gated for Fan.
+    void this.getActive().then((active) => {
+      this.service.updateCharacteristic(c.Active, active);
+    });
+    if (this.service.testCharacteristic(c.RotationSpeed)) {
       this.service.updateCharacteristic(
-        this.platform.Characteristic.RotationSpeed,
+        c.RotationSpeed,
         this.fanStageToPercent(this.device.state?.setfan ?? 0),
       );
     }

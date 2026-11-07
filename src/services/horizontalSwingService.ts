@@ -4,11 +4,9 @@ import { Unit } from '../data.js';
 import { CommandAirDirectionH } from '../melviewCommand.js';
 
 /**
- * Exposes a Switch HomeKit service for horizontal airflow swing.
- * ON  = horizontal sweep enabled (sends AH0)
- * OFF = horizontal sweep stopped at centre position (sends AH3)
- *
- * Only registered on models where capabilities.hasairdirh === 1.
+ * Linked Switch for horizontal airflow swing (same accessory card as HeaterCooler).
+ * ON  = horizontal sweep (AH0)
+ * OFF = centre fixed (AH3)
  */
 export class HorizontalSwingService {
   private readonly service: Service;
@@ -21,14 +19,10 @@ export class HorizontalSwingService {
     this.device = accessory.context.device;
 
     this.service =
-      this.accessory.getService(this.platform.Service.Switch) ||
-      this.accessory.addService(this.platform.Service.Switch);
+      this.accessory.getServiceById(this.platform.Service.Switch, 'airflow-h') ||
+      this.accessory.addService(this.platform.Service.Switch, 'Horizontal Swing', 'airflow-h');
 
-    const name = this.device.name ?? this.device.room;
-    this.service.setCharacteristic(
-      this.platform.Characteristic.Name,
-      name + ' Horizontal Swing',
-    );
+    this.service.setCharacteristic(this.platform.Characteristic.Name, 'Horizontal Swing');
 
     this.service
       .getCharacteristic(this.platform.Characteristic.On)
@@ -38,19 +32,20 @@ export class HorizontalSwingService {
     platform.log.info('HORIZONTAL SWING Capability:', this.device.room, '[COMPLETED]');
   }
 
+  public getService(): Service {
+    return this.service;
+  }
+
   async getOn(): Promise<CharacteristicValue> {
-    // airdirh 0 = swing is active
     return (this.device.state?.airdirh ?? 1) === 0;
   }
 
   async setOn(value: CharacteristicValue) {
-    // Skip if unit is powered off - API rejects horizontal swing changes when off
     if (this.device.state?.power === 0) {
       this.platform.log.debug('setOn (Horizontal Swing) skipped - unit is powered off');
       return;
     }
     this.platform.log.debug('setHorizontalSwing ->', value);
-    // 0 = swing, 3 = centre fixed position
     const airdirh = value ? 0 : 3;
     try {
       await this.platform.melviewService?.command(
