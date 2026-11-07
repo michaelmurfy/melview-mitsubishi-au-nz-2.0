@@ -89,18 +89,11 @@ npm test
 
 ## Publishing to npm
 
-CI runs lint, build, and tests on every push/PR.
-
-Publish to [npmjs](https://www.npmjs.com/package/homebridge-airconditioner-mitsubishi-au-nz-v2/) by either:
-1. Creating a GitHub Release, or
-2. Running **Actions -> Publish to npm -> Run workflow**
-
-Setup once:
-1. Create an npm Automation access token at https://www.npmjs.com/settings/~/tokens
-2. In the GitHub repo: **Settings -> Secrets and variables -> Actions**
-3. Add repository secret `NPM_TOKEN` with that token value
-
-The publish workflow uses `npm publish --access public --provenance`.
+```bash
+npm login
+npm ci
+npm publish --access public
+```
 
 ## Credits
 
