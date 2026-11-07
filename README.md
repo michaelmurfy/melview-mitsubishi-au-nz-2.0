@@ -75,9 +75,8 @@ All configuration is done via the Homebridge UI settings panel or by editing
 | `outdoorTemp` | boolean | no | `false` | Outdoor temperature sensor |
 | `airflowH` | boolean | no | `false` | Horizontal swing switch |
 | `fanMode` | boolean | no | `false` | Fan-only mode (`WorkMode.FAN`) |
-| `preferLocalControl` | boolean | no | `true` | POST commands to unit `/smart` on LAN after Melview |
 | `pollIntervalSeconds` | integer | no | `30` | Melview poll interval (`5` to `300`) |
-| `perUnitOverrides` | array | no | - | Per-unit overrides keyed by `unitId` |
+| `perUnitOverrides` | array | no | - | Per-unit overrides keyed by `unitId` (auto-populated on discovery) |
 
 Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` to `MAC-568IF-E`) and set as the accessory Model.
 

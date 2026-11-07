@@ -52,11 +52,6 @@
         "type": "boolean",
         "default": false
       },
-      "preferLocalControl": {
-        "title": "LAN /smart hop",
-        "type": "boolean",
-        "default": true
-      },
       "pollIntervalSeconds": {
         "title": "Poll interval (seconds)",
         "type": "integer",
@@ -105,10 +100,6 @@
               "title": "Fan-only mode",
               "type": "boolean"
             },
-            "preferLocalControl": {
-              "title": "LAN /smart hop",
-              "type": "boolean"
-            },
             "pollIntervalSeconds": {
               "title": "Poll interval (seconds)",
               "type": "integer",
@@ -129,14 +120,7 @@
     {
       "type": "fieldset",
       "title": "HomeKit",
-      "items": ["fanSpeed", "swingMode", "dry", "outdoorTemp", "airflowH", "fanMode"]
-    },
-    {
-      "type": "fieldset",
-      "title": "Network",
-      "expandable": true,
-      "expanded": false,
-      "items": ["preferLocalControl", "pollIntervalSeconds"]
+      "items": ["fanSpeed", "swingMode", "dry", "outdoorTemp", "airflowH", "fanMode", "pollIntervalSeconds"]
     },
     {
       "key": "perUnitOverrides",
@@ -157,7 +141,6 @@
         "perUnitOverrides[].outdoorTemp",
         "perUnitOverrides[].airflowH",
         "perUnitOverrides[].fanMode",
-        "perUnitOverrides[].preferLocalControl",
         "perUnitOverrides[].pollIntervalSeconds"
       ]
     }

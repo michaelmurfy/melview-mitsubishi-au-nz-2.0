@@ -115,7 +115,7 @@ export class MelviewService {
     if (rBody.error !== 'ok') {
       throw new Error('Command rejected by Melview API: ' + (rBody.error || 'unknown error'));
     }
-    if (rBody.lc && rBody.lc.length > 0 && this.shouldPreferLocal(command.getUnitID())) {
+    if (rBody.lc && rBody.lc.length > 0) {
       this.forwardLocalCommand(command, rBody.lc);
     }
   }
@@ -125,19 +125,6 @@ export class MelviewService {
    * family ESV envelope). Forward it on the LAN for snappier local apply; cloud
    * already accepted the command so failures are warnings only.
    */
-  private shouldPreferLocal(unitId: string): boolean {
-    const overrides = this.config.perUnitOverrides;
-    if (Array.isArray(overrides)) {
-      const hit = overrides.find((entry) =>
-        entry && typeof entry === 'object' && (entry as { unitId?: string }).unitId === unitId,
-      ) as { preferLocalControl?: boolean } | undefined;
-      if (hit && typeof hit.preferLocalControl === 'boolean') {
-        return hit.preferLocalControl;
-      }
-    }
-    return this.config.preferLocalControl !== false;
-  }
-
   private forwardLocalCommand(command: Command, lc: string): void {
     let url: string;
     try {

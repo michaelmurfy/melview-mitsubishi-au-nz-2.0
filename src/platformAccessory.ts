@@ -10,7 +10,6 @@ import { OutdoorTemperatureService } from './services/outdoorTemperatureService.
 import { formatWifiModule, supportsLocalSmart } from './wifiModule.js';
 
 interface EffectiveConfig {
-  preferLocalControl: boolean;
   dry: boolean;
   fanMode: boolean;
   airflowH: boolean;
@@ -215,7 +214,6 @@ export class MelviewMitsubishiPlatformAccessory {
     const hasFanStages = (caps?.fanstage ?? 0) > 0;
 
     return {
-      preferLocalControl: this.resolveBoolean('preferLocalControl', true, override),
       dry: this.resolveBoolean('dry', false, override),
       fanMode: this.resolveBoolean('fanMode', false, override),
       airflowH: this.resolveBoolean('airflowH', false, override),
