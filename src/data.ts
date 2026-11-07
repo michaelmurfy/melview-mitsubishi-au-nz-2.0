@@ -66,6 +66,7 @@ export interface Capabilities {
     hasautofan: number;
     hasdrymode: number;
     hasenergy: number;
+    hasoutdoortemp: number;
     hasairauto: number;
     hasairdirh: number;
     max?: Record<string, Range>;

@@ -2,124 +2,217 @@
   "pluginAlias": "MitsubishiAUNZ",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Enter your Mitsubishi **Wi-Fi Control** app credentials to discover your units.",
+  "headerDisplay": "Sign in with your Mitsubishi **Wi-Fi Control** account. The plugin discovers units via Melview and applies optional HomeKit features from each unit's reported capabilities (including Wi-Fi module type).",
+  "footerDisplay": "Wi-Fi modules such as MAC-568IF-E / MAC-577IF-E are detected from Melview `adaptortype`. Optional features still respect per-unit hardware flags (dry, outdoor temp, horizontal swing, etc.).",
   "schema": {
     "type": "object",
     "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "MitsubishiAUNZ",
+        "description": "Platform instance name shown in Homebridge logs."
+      },
       "user": {
-        "title": "User Name",
+        "title": "Email",
         "type": "string",
         "required": true,
-        "description": "Your user id, e.g. username@domain.com"
+        "format": "email",
+        "description": "Mitsubishi Wi-Fi Control account email."
       },
       "password": {
-        "title": "User Password",
+        "title": "Password",
         "type": "string",
         "required": true,
-        "description": "Password used on your Mitsubishi Wi-Fi Control app"
+        "description": "Mitsubishi Wi-Fi Control account password."
+      },
+      "capabilityMode": {
+        "title": "Feature mode",
+        "type": "string",
+        "default": "auto",
+        "oneOf": [
+          {
+            "title": "Auto — enable features Melview says the unit supports",
+            "enum": ["auto"]
+          },
+          {
+            "title": "Manual — only enable the toggles below",
+            "enum": ["manual"]
+          }
+        ],
+        "description": "Auto uses each unit's Melview capability flags (hasdrymode, hasoutdoortemp, hasairdirh). Vertical swing and fan speed stay opt-in even in Auto because they can affect tile reliability."
+      },
+      "preferLocalControl": {
+        "title": "Prefer LAN control hop",
+        "type": "boolean",
+        "default": true,
+        "description": "After Melview accepts a command, also POST the encrypted payload to the unit's `/smart` endpoint when a LAN IP is known (MAC-568 / MAC-577 family)."
       },
       "dry": {
-        "title": "Enable Dry Mode (experimental)",
+        "title": "Dry mode (dehumidifier tile)",
         "type": "boolean",
         "default": false,
-        "description": "Adds a Dehumidifier service for units that support dry mode."
+        "description": "Manual mode: add a Dehumidifier service when the unit supports dry mode."
       },
       "fanMode": {
-        "title": "Enable Fan-Only Mode",
+        "title": "Fan-only mode",
         "type": "boolean",
         "default": false,
-        "description": "Adds a Fan service that lets you run the unit in fan-only mode without heating or cooling. This service is also added automatically when fanSpeed is enabled."
+        "description": "Add a Fan service for fan-only operation. Also added automatically when fan speed is enabled."
       },
       "swingMode": {
-        "title": "Enable Vertical Airflow Swing",
+        "title": "Vertical airflow swing",
         "type": "boolean",
         "default": false,
-        "description": "Adds vertical airflow swing control to the main AC tile on supported models. Some units may reject swing commands during power transitions; if this affects tile toggling, leave disabled and set swing to 'Auto' on your physical remote."
+        "description": "Opt-in vertical swing on the main AC tile. Leave off if power toggles become unreliable."
       },
       "airflowH": {
-        "title": "Enable Horizontal Airflow Swing",
+        "title": "Horizontal airflow swing",
         "type": "boolean",
         "default": false,
-        "description": "Adds horizontal airflow swing control on supported models (ON = sweep, OFF = centre). Horizontal swing is not supported by many Mitsubishi units."
+        "description": "Manual mode: horizontal louvre swing switch when Melview reports hasairdirh."
       },
       "fanSpeed": {
-        "title": "Enable Fan Speed Control (experimental)",
+        "title": "Fan speed control",
         "type": "boolean",
         "default": false,
-        "description": "Exposes a fan speed slider (Auto / Low / Medium / High) on a separate Fan service (added automatically) and keeps the main AC tile cleaner by default."
+        "description": "Experimental fan-speed slider on a separate Fan service."
       },
       "fanSpeedOnMainTile": {
-        "title": "Show Fan Speed on Main AC Tile (advanced)",
+        "title": "Fan speed on main AC tile",
         "type": "boolean",
         "default": false,
-        "description": "When fanSpeed is enabled, also exposes fan speed on the main Air Conditioner tile. Leave disabled for best reliability."
+        "description": "Also expose fan speed on the HeaterCooler tile (requires fan speed enabled)."
       },
       "outdoorTemp": {
-        "title": "Enable Outdoor Temperature Sensor",
+        "title": "Outdoor temperature sensor",
         "type": "boolean",
         "default": false,
-        "description": "Adds a Temperature Sensor accessory showing the outdoor unit temperature (when reported by the unit)."
+        "description": "Manual mode: Temperature Sensor when Melview reports hasoutdoortemp."
       },
       "pollIntervalSeconds": {
-        "title": "Polling Interval (seconds)",
+        "title": "Polling interval (seconds)",
         "type": "integer",
         "default": 30,
         "minimum": 5,
         "maximum": 300,
-        "description": "How often to refresh each unit state from Melview. Lower values are more responsive but increase API traffic."
+        "description": "How often to refresh each unit from Melview."
       },
       "perUnitOverrides": {
-        "title": "Per-Unit Overrides",
+        "title": "Per-unit overrides",
         "type": "array",
-        "description": "Override options for specific units by unitId.",
+        "description": "Override feature toggles for a specific Melview unit ID.",
         "items": {
           "type": "object",
           "properties": {
             "unitId": {
               "title": "Unit ID",
               "type": "string",
-              "description": "Melview unit identifier (required)."
+              "description": "Melview unitid from plugin logs / Melview account.",
+              "required": true
+            },
+            "capabilityMode": {
+              "title": "Feature mode",
+              "type": "string",
+              "oneOf": [
+                { "title": "Auto", "enum": ["auto"] },
+                { "title": "Manual", "enum": ["manual"] }
+              ]
+            },
+            "preferLocalControl": {
+              "title": "Prefer LAN control hop",
+              "type": "boolean"
             },
             "dry": {
-              "title": "Enable Dry Mode",
+              "title": "Dry mode",
               "type": "boolean"
             },
             "fanMode": {
-              "title": "Enable Fan-Only Mode",
+              "title": "Fan-only mode",
               "type": "boolean"
             },
             "swingMode": {
-              "title": "Enable Vertical Airflow Swing",
+              "title": "Vertical airflow swing",
               "type": "boolean"
             },
             "airflowH": {
-              "title": "Enable Horizontal Airflow Swing",
+              "title": "Horizontal airflow swing",
               "type": "boolean"
             },
             "fanSpeed": {
-              "title": "Enable Fan Speed Control",
+              "title": "Fan speed control",
               "type": "boolean"
             },
             "fanSpeedOnMainTile": {
-              "title": "Show Fan Speed on Main AC Tile",
+              "title": "Fan speed on main AC tile",
               "type": "boolean"
             },
             "outdoorTemp": {
-              "title": "Enable Outdoor Temperature Sensor",
+              "title": "Outdoor temperature sensor",
               "type": "boolean"
             },
             "pollIntervalSeconds": {
-              "title": "Polling Interval (seconds)",
+              "title": "Polling interval (seconds)",
               "type": "integer",
               "minimum": 5,
               "maximum": 300
             }
-          },
-          "required": [
-            "unitId"
-          ]
+          }
         }
       }
     }
-  }
+  },
+  "layout": [
+    {
+      "type": "flex",
+      "flex-flow": "row wrap",
+      "items": [
+        "name",
+        "user",
+        "password"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Discovery & control",
+      "items": [
+        "capabilityMode",
+        "preferLocalControl",
+        "pollIntervalSeconds"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Manual feature toggles",
+      "description": "Used when Feature mode is Manual. In Auto, dry / outdoor temp / horizontal swing follow Melview capabilities; these toggles still force features on if set true.",
+      "items": [
+        "dry",
+        "outdoorTemp",
+        "airflowH",
+        "fanMode",
+        "fanSpeed",
+        "fanSpeedOnMainTile",
+        "swingMode"
+      ]
+    },
+    {
+      "key": "perUnitOverrides",
+      "type": "array",
+      "title": "Per-unit overrides",
+      "buttonText": "Add unit override",
+      "items": [
+        "unitId",
+        "capabilityMode",
+        "preferLocalControl",
+        "dry",
+        "outdoorTemp",
+        "airflowH",
+        "fanMode",
+        "fanSpeed",
+        "fanSpeedOnMainTile",
+        "swingMode",
+        "pollIntervalSeconds"
+      ]
+    }
+  ]
 }

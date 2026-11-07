@@ -7,8 +7,11 @@ import { DryService } from './services/dryService.js';
 import { FanModeService } from './services/fanModeService.js';
 import { HorizontalSwingService } from './services/horizontalSwingService.js';
 import { OutdoorTemperatureService } from './services/outdoorTemperatureService.js';
+import { formatWifiModule, supportsLocalSmart } from './wifiModule.js';
 
 interface EffectiveConfig {
+  capabilityMode: 'auto' | 'manual';
+  preferLocalControl: boolean;
   dry: boolean;
   fanMode: boolean;
   airflowH: boolean;
@@ -40,148 +43,156 @@ export class MelviewMitsubishiPlatformAccessory {
     this.effectiveConfig = this.resolveEffectiveConfig(device.unitid);
     this.accessory.context.effectiveConfig = this.effectiveConfig;
     this.accessory.context.connectionHealthy = true;
-        // set accessory information
-        this.accessory.getService(this.platform.Service.AccessoryInformation)!
-          .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Mitsubishi Electric')
-          .setCharacteristic(this.platform.Characteristic.Model, device.capabilities!.adaptortype)
-          .setCharacteristic(this.platform.Characteristic.SerialNumber, device.unitid);
+    const wifiModule = formatWifiModule(device.capabilities?.adaptortype);
+    this.platform.log.info(
+      'Wi-Fi module:',
+      device.room,
+      wifiModule,
+      supportsLocalSmart(device.capabilities?.adaptortype) ? '[local /smart]' : '[cloud only]',
+    );
 
-        /*********************************************************
+    // set accessory information
+    this.accessory.getService(this.platform.Service.AccessoryInformation)!
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Mitsubishi Electric')
+      .setCharacteristic(this.platform.Characteristic.Model, wifiModule)
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, device.unitid);
+
+    /*********************************************************
          * HEATER & Cooler Capability
          * see https://developers.homebridge.io/#/service/HeaterCooler
          *********************************************************/
-        this.acService = new HeatCoolService(this.platform, this.accessory);
-        this.platform.log.info('HEAT/COOL Capability:', device.room, ' [COMPLETED]');
-        this.setupMainStatusFault();
+    this.acService = new HeatCoolService(this.platform, this.accessory);
+    this.platform.log.info('HEAT/COOL Capability:', device.room, ' [COMPLETED]');
+    this.setupMainStatusFault();
 
-        // Remove any cached RotationSpeed on the HeaterCooler service unless
-        // explicitly enabled via fanSpeed + fanSpeedOnMainTile.
-        if (!(this.effectiveConfig.fanSpeed && this.effectiveConfig.fanSpeedOnMainTile)) {
-          if (this.acService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
-            const staleRs = this.acService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
-            this.acService.getService().removeCharacteristic(staleRs);
-            this.platform.log.info('FAN SPEED Capability (HeaterCooler):', device.room, ' [REMOVED]');
-          }
-        }
+    // Remove any cached RotationSpeed on the HeaterCooler service unless
+    // explicitly enabled via fanSpeed + fanSpeedOnMainTile.
+    if (!(this.effectiveConfig.fanSpeed && this.effectiveConfig.fanSpeedOnMainTile)) {
+      if (this.acService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
+        const staleRs = this.acService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
+        this.acService.getService().removeCharacteristic(staleRs);
+        this.platform.log.info('FAN SPEED Capability (HeaterCooler):', device.room, ' [REMOVED]');
+      }
+    }
 
-        /*********************************************************
+    /*********************************************************
          * Dehumidifier Capability
          * https://developers.homebridge.io/#/service/HumidifierDehumidifier
          *********************************************************/
-        if (this.effectiveConfig.dry && device.capabilities?.hasdrymode === 1) {
-          this.dryService = new DryService(this.platform, this.accessory);
-          this.platform.log.info('DRY Capability:', device.room, ' [COMPLETED]');
-        } else {
-          const stale = this.accessory.getService(this.platform.Service.HumidifierDehumidifier);
-          if (stale) {
-            this.accessory.removeService(stale);
-            this.platform.log.info('DRY Capability:', device.room, ' [REMOVED]');
-          } else {
-            this.platform.log.info('DRY Capability:', device.room, ' [UNAVAILABLE]');
-          }
-        }
+    if (this.effectiveConfig.dry && device.capabilities?.hasdrymode === 1) {
+      this.dryService = new DryService(this.platform, this.accessory);
+      this.platform.log.info('DRY Capability:', device.room, ' [COMPLETED]');
+    } else {
+      const stale = this.accessory.getService(this.platform.Service.HumidifierDehumidifier);
+      if (stale) {
+        this.accessory.removeService(stale);
+        this.platform.log.info('DRY Capability:', device.room, ' [REMOVED]');
+      } else {
+        this.platform.log.info('DRY Capability:', device.room, ' [UNAVAILABLE]');
+      }
+    }
 
-        /*********************************************************
+    /*********************************************************
          * Fan-Only Mode / Fan Speed Capability
          *********************************************************/
-        if (this.effectiveConfig.fanMode || this.effectiveConfig.fanSpeed) {
-          this.fanModeService = new FanModeService(this.platform, this.accessory);
-          this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
-          // Remove any cached RotationSpeed on the Fanv2 service when fan speed is disabled.
-          if (!this.effectiveConfig.fanSpeed) {
-            if (this.fanModeService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
-              const staleRs = this.fanModeService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
-              this.fanModeService.getService().removeCharacteristic(staleRs);
-              this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [REMOVED]');
-            }
-          } else {
-            this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [COMPLETED]');
-          }
-        } else {
-          const stale = this.accessory.getService(this.platform.Service.Fanv2);
-          if (stale) {
-            this.accessory.removeService(stale);
-            this.platform.log.info('FAN MODE Capability:', device.room, ' [REMOVED]');
-          }
+    if (this.effectiveConfig.fanMode || this.effectiveConfig.fanSpeed) {
+      this.fanModeService = new FanModeService(this.platform, this.accessory);
+      this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
+      // Remove any cached RotationSpeed on the Fanv2 service when fan speed is disabled.
+      if (!this.effectiveConfig.fanSpeed) {
+        if (this.fanModeService.getService().testCharacteristic(this.platform.Characteristic.RotationSpeed)) {
+          const staleRs = this.fanModeService.getService().getCharacteristic(this.platform.Characteristic.RotationSpeed);
+          this.fanModeService.getService().removeCharacteristic(staleRs);
+          this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [REMOVED]');
         }
+      } else {
+        this.platform.log.info('FAN SPEED Capability (Fanv2):', device.room, ' [COMPLETED]');
+      }
+    } else {
+      const stale = this.accessory.getService(this.platform.Service.Fanv2);
+      if (stale) {
+        this.accessory.removeService(stale);
+        this.platform.log.info('FAN MODE Capability:', device.room, ' [REMOVED]');
+      }
+    }
 
-        /*********************************************************
+    /*********************************************************
          * Horizontal Airflow Swing Capability
          * https://developers.homebridge.io/#/service/Switch
          *********************************************************/
-        if (this.effectiveConfig.airflowH && device.capabilities?.hasairdirh === 1) {
-          this.horizontalSwingService = new HorizontalSwingService(this.platform, this.accessory);
-        } else {
-          const stale = this.accessory.getService(this.platform.Service.Switch);
-          if (stale) {
-            this.accessory.removeService(stale);
-            this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [REMOVED]');
-          } else {
-            this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [UNAVAILABLE]');
-          }
-        }
+    if (this.effectiveConfig.airflowH && device.capabilities?.hasairdirh === 1) {
+      this.horizontalSwingService = new HorizontalSwingService(this.platform, this.accessory);
+    } else {
+      const stale = this.accessory.getService(this.platform.Service.Switch);
+      if (stale) {
+        this.accessory.removeService(stale);
+        this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [REMOVED]');
+      } else {
+        this.platform.log.info('HORIZONTAL SWING Capability:', device.room, ' [UNAVAILABLE]');
+      }
+    }
 
-        /*********************************************************
+    /*********************************************************
          * Outdoor Temperature Sensor
          *********************************************************/
-        if (this.effectiveConfig.outdoorTemp &&
-            device.state?.outdoortemp && !isNaN(parseFloat(device.state.outdoortemp))) {
-          this.outdoorTemperatureService = new OutdoorTemperatureService(this.platform, this.accessory);
-          this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [COMPLETED]');
-        } else {
-          const stale = this.accessory.getService(this.platform.Service.TemperatureSensor);
-          if (stale) {
-            this.accessory.removeService(stale);
-            this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [REMOVED]');
-          } else {
-            this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [UNAVAILABLE]');
-          }
-        }
+    // Gate on Melview hasoutdoortemp; value may be absent at boot and fill in on poll.
+    if (this.effectiveConfig.outdoorTemp && device.capabilities?.hasoutdoortemp === 1) {
+      this.outdoorTemperatureService = new OutdoorTemperatureService(this.platform, this.accessory);
+      this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [COMPLETED]');
+    } else {
+      const stale = this.accessory.getService(this.platform.Service.TemperatureSensor);
+      if (stale) {
+        this.accessory.removeService(stale);
+        this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [REMOVED]');
+      } else {
+        this.platform.log.info('OUTDOOR TEMPERATURE Capability:', device.room, ' [UNAVAILABLE]');
+      }
+    }
 
-        // Fault/health is represented on the main AC tile via StatusFault.
-        // Remove any stale dedicated fault sensor service from older versions.
-        const staleFault = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'fault-sensor');
-        if (staleFault) {
-          this.accessory.removeService(staleFault);
-          this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [REMOVED]');
-        }
+    // Fault/health is represented on the main AC tile via StatusFault.
+    // Remove any stale dedicated fault sensor service from older versions.
+    const staleFault = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'fault-sensor');
+    if (staleFault) {
+      this.accessory.removeService(staleFault);
+      this.platform.log.info('FAULT SENSOR Capability:', device.room, ' [REMOVED]');
+    }
 
-        // Health is represented on the main AC tile via StatusFault.
-        // Remove any stale dedicated health sensor service from older versions.
-        const staleHealth = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'health-sensor');
-        if (staleHealth) {
-          this.accessory.removeService(staleHealth);
-          this.platform.log.info('HEALTH SENSOR Capability:', device.room, ' [REMOVED]');
-        }
+    // Health is represented on the main AC tile via StatusFault.
+    // Remove any stale dedicated health sensor service from older versions.
+    const staleHealth = this.accessory.getServiceById(this.platform.Service.ContactSensor, 'health-sensor');
+    if (staleHealth) {
+      this.accessory.removeService(staleHealth);
+      this.platform.log.info('HEALTH SENSOR Capability:', device.room, ' [REMOVED]');
+    }
 
 
-        /*********************************************************
+    /*********************************************************
          * Polling for state change
          *********************************************************/
 
-        const pollIntervalSeconds = this.getPollIntervalSeconds();
-        const pollIntervalMs = this.getJitteredIntervalMs(pollIntervalSeconds * 1000);
-        this.platform.log.info('Polling interval:', pollIntervalSeconds, 'seconds (jittered to', pollIntervalMs, 'ms)');
-        this.syncFromPolledState();
+    const pollIntervalSeconds = this.getPollIntervalSeconds();
+    const pollIntervalMs = this.getJitteredIntervalMs(pollIntervalSeconds * 1000);
+    this.platform.log.info('Polling interval:', pollIntervalSeconds, 'seconds (jittered to', pollIntervalMs, 'ms)');
+    this.syncFromPolledState();
 
-        this.pollingInterval = setInterval(() => {
-          this.platform.melviewService?.getStatus(
-            this.accessory.context.device.unitid)
-            .then(s => {
-              // this.platform.log.debug('Updating Accessory State:',
-              //   this.accessory.context.device.unitid);
-              this.accessory.context.connectionHealthy = true;
-              this.accessory.context.device.state = s;
-              this.syncFromPolledState();
-              this.updateMainStatusFault();
-            })
-            .catch(e => {
-              this.accessory.context.connectionHealthy = false;
-              this.platform.log.error('Unable to find accessory status. Check the network');
-              this.platform.log.debug(e);
-              this.updateMainStatusFault();
-            });
-        }, pollIntervalMs);
+    this.pollingInterval = setInterval(() => {
+      this.platform.melviewService?.getStatus(
+        this.accessory.context.device.unitid)
+        .then(s => {
+          // this.platform.log.debug('Updating Accessory State:',
+          //   this.accessory.context.device.unitid);
+          this.accessory.context.connectionHealthy = true;
+          this.accessory.context.device.state = s;
+          this.syncFromPolledState();
+          this.updateMainStatusFault();
+        })
+        .catch(e => {
+          this.accessory.context.connectionHealthy = false;
+          this.platform.log.error('Unable to find accessory status. Check the network');
+          this.platform.log.debug(e);
+          this.updateMainStatusFault();
+        });
+    }, pollIntervalMs);
   }
 
   private getPollIntervalSeconds(): number {
@@ -200,16 +211,31 @@ export class MelviewMitsubishiPlatformAccessory {
 
   private resolveEffectiveConfig(unitId: string): EffectiveConfig {
     const override = this.getUnitOverride(unitId);
+    const caps = this.accessory.context.device?.capabilities;
+    const capabilityMode = this.resolveCapabilityMode(override);
+    const auto = capabilityMode === 'auto';
+    const manualDry = this.resolveBoolean('dry', false, override);
+    const manualOutdoor = this.resolveBoolean('outdoorTemp', false, override);
+    const manualAirflowH = this.resolveBoolean('airflowH', false, override);
+
     return {
-      dry: this.resolveBoolean('dry', false, override),
+      capabilityMode,
+      preferLocalControl: this.resolveBoolean('preferLocalControl', true, override),
+      // Auto follows Melview hardware flags; explicit true still forces a feature on.
+      dry: manualDry || (auto && caps?.hasdrymode === 1),
       fanMode: this.resolveBoolean('fanMode', false, override),
-      airflowH: this.resolveBoolean('airflowH', false, override),
+      airflowH: manualAirflowH || (auto && caps?.hasairdirh === 1),
       swingMode: this.resolveBoolean('swingMode', false, override),
       fanSpeed: this.resolveBoolean('fanSpeed', false, override),
       fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override),
-      outdoorTemp: this.resolveBoolean('outdoorTemp', false, override),
+      outdoorTemp: manualOutdoor || (auto && caps?.hasoutdoortemp === 1),
       pollIntervalSeconds: this.resolveNumber('pollIntervalSeconds', 30, override),
     };
+  }
+
+  private resolveCapabilityMode(override?: Record<string, unknown>): 'auto' | 'manual' {
+    const value = override?.capabilityMode ?? this.platform.config.capabilityMode;
+    return value === 'manual' ? 'manual' : 'auto';
   }
 
   private getUnitOverride(unitId: string): Record<string, unknown> | undefined {

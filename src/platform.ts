@@ -83,8 +83,18 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
           if (existingAccessory) {
             this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
 
-            const s = await this.melviewService!.getStatus(device.unitid);
-            existingAccessory.context.device.state = s;
+            // Refresh capabilities every launch — localip moves with DHCP and is
+            // required for the Melview `lc` → unit `/smart` LAN hop.
+            const [c, s] = await Promise.all([
+              this.melviewService!.capabilities(device.unitid),
+              this.melviewService!.getStatus(device.unitid),
+            ]);
+            existingAccessory.context.device = {
+              ...existingAccessory.context.device,
+              ...device,
+              capabilities: c,
+              state: s,
+            };
             this.registerAccessoryHandler(existingAccessory);
           } else {
             this.log.info('Adding new accessory:', device.room, '[', device.unitid, ']:', uuid);

@@ -67,17 +67,21 @@ All configuration is done via the Homebridge UI settings panel or by editing
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `user` | string | yes | — | Your Mitsubishi Wi-Fi Control email address |
-| `password` | string | yes | — | Your Mitsubishi Wi-Fi Control password |
-| `dry` | boolean | no | `false` | Enable Dehumidifier accessory for dry mode |
-| `fanMode` | boolean | no | `false` | Enable Fan accessory for fan-only mode |
-| `swingMode` | boolean | no | `false` | Enable vertical airflow swing on the main AC tile. Enable only if needed; some units reject swing commands during power transitions. |
-| `airflowH` | boolean | no | `false` | Enable horizontal airflow swing. Horizontal swing is not supported by many units. |
-| `fanSpeed` | boolean | no | `false` | *(experimental)* Enable fan speed slider on a separate Fan accessory (auto-added) |
-| `fanSpeedOnMainTile` | boolean | no | `false` | *(advanced)* Also show fan speed slider on the main AC tile (requires `fanSpeed: true`) |
-| `outdoorTemp` | boolean | no | `false` | Enable outdoor temperature sensor (when reported by the unit) |
-| `pollIntervalSeconds` | integer | no | `30` | State polling interval in seconds (range `5` to `300`) |
-| `perUnitOverrides` | array | no | — | Optional per-unit override objects keyed by `unitId` |
+| `user` | string | yes | — | Mitsubishi Wi-Fi Control email |
+| `password` | string | yes | — | Mitsubishi Wi-Fi Control password |
+| `capabilityMode` | `auto` \| `manual` | no | `auto` | Auto enables dry / outdoor temp / horizontal swing from Melview capability flags per unit |
+| `preferLocalControl` | boolean | no | `true` | After Melview accepts a command, also POST to the unit `/smart` LAN endpoint when known |
+| `dry` | boolean | no | `false` | Manual (or force-on): Dehumidifier accessory |
+| `fanMode` | boolean | no | `false` | Fan accessory for fan-only mode |
+| `swingMode` | boolean | no | `false` | Vertical swing on the main tile (always opt-in) |
+| `airflowH` | boolean | no | `false` | Manual (or force-on): horizontal swing switch |
+| `fanSpeed` | boolean | no | `false` | Experimental fan-speed slider on a Fan accessory |
+| `fanSpeedOnMainTile` | boolean | no | `false` | Also show fan speed on the main AC tile |
+| `outdoorTemp` | boolean | no | `false` | Manual (or force-on): outdoor temperature sensor |
+| `pollIntervalSeconds` | integer | no | `30` | Melview poll interval (`5`–`300`) |
+| `perUnitOverrides` | array | no | — | Optional overrides keyed by Melview `unitId` |
+
+Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` → `MAC-568IF-E`) and logged at startup. Accessory Information **Model** uses that label.
 
 ### Example `config.json`
 
@@ -86,21 +90,19 @@ All configuration is done via the Homebridge UI settings panel or by editing
   "platforms": [
     {
       "platform": "MitsubishiAUNZ",
+      "name": "MitsubishiAUNZ",
       "user": "user@example.com",
       "password": "yourpassword",
-      "dry": true,
-      "fanMode": true,
+      "capabilityMode": "auto",
+      "preferLocalControl": true,
       "swingMode": false,
-      "airflowH": false,
       "fanSpeed": false,
-      "fanSpeedOnMainTile": false,
-      "outdoorTemp": false,
       "pollIntervalSeconds": 30,
       "perUnitOverrides": [
         {
           "unitId": "1234567890",
+          "capabilityMode": "manual",
           "fanSpeed": true,
-          "fanSpeedOnMainTile": true,
           "pollIntervalSeconds": 15
         }
       ]

@@ -4,8 +4,7 @@ import { Unit } from '../data.js';
 
 /**
  * Exposes a TemperatureSensor HomeKit service for the outdoor unit temperature.
- * Read-only — uses the `outdoortemp` field already present in the Melview state payload.
- * Only registered when the initial state poll returns a numeric outdoor temperature.
+ * Read-only — uses Melview `outdoortemp` when present (some units omit it until a later poll).
  */
 export class OutdoorTemperatureService {
   private readonly service: Service;
