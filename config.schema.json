@@ -65,14 +65,20 @@
         "maximum": 300
       },
       "perUnitOverrides": {
-        "title": "Per-unit overrides",
+        "title": "Units",
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
+            "room": {
+              "title": "Unit",
+              "type": "string",
+              "readonly": true
+            },
             "unitId": {
               "title": "Unit ID",
               "type": "string",
+              "readonly": true,
               "required": true
             },
             "fanSpeed": {
@@ -135,20 +141,24 @@
     {
       "key": "perUnitOverrides",
       "type": "array",
-      "title": "Per-unit overrides",
+      "title": "Units (auto-populated from Melview)",
       "expandable": true,
-      "expanded": false,
-      "buttonText": "Add override",
+      "expanded": true,
+      "orderable": false,
       "items": [
-        "unitId",
-        "fanSpeed",
-        "swingMode",
-        "dry",
-        "outdoorTemp",
-        "airflowH",
-        "fanMode",
-        "preferLocalControl",
-        "pollIntervalSeconds"
+        {
+          "type": "flex",
+          "flex-flow": "row wrap",
+          "items": ["perUnitOverrides[].room", "perUnitOverrides[].unitId"]
+        },
+        "perUnitOverrides[].fanSpeed",
+        "perUnitOverrides[].swingMode",
+        "perUnitOverrides[].dry",
+        "perUnitOverrides[].outdoorTemp",
+        "perUnitOverrides[].airflowH",
+        "perUnitOverrides[].fanMode",
+        "perUnitOverrides[].preferLocalControl",
+        "perUnitOverrides[].pollIntervalSeconds"
       ]
     }
   ]
