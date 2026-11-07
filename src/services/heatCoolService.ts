@@ -50,6 +50,13 @@ export class HeatCoolService extends AbstractService {
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.maxValue = 70;
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minStep = 0.5;
 
+    // AU/NZ plugin — present temperatures in Celsius in HomeKit.
+    this.service.addOptionalCharacteristic(this.platform.Characteristic.TemperatureDisplayUnits);
+    this.service.updateCharacteristic(
+      this.platform.Characteristic.TemperatureDisplayUnits,
+      this.platform.Characteristic.TemperatureDisplayUnits.CELSIUS,
+    );
+
     this.service.getCharacteristic(this.platform.Characteristic.CoolingThresholdTemperature)
       .onSet(this.setCoolingThresholdTemperature.bind(this))
       .onGet(this.getCoolingThresholdTemperature.bind(this));

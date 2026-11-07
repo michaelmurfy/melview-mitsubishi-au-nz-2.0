@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import {
   API,
   Characteristic,
@@ -8,6 +9,7 @@ import {
   Service,
 } from 'homebridge';
 
+import { Unit } from './data.js';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 import { MelviewMitsubishiPlatformAccessory } from './platformAccessory.js';
 import { MelviewService } from './melviewService.js';
@@ -67,6 +69,7 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
       }
 
       const discoveredUuids = new Set<string>();
+      const discoveredUnits: Unit[] = [];
 
       for (let j = 0; j < r.length; j++) {
         const b = r[j];
@@ -74,6 +77,7 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
           '\' with', b.units.length, 'units!');
         for (let i = 0; i < b.units.length; i++) {
           const device = b.units[i];
+          discoveredUnits.push(device);
 
           const uuid = this.api.hap.uuid.generate(device.unitid);
           discoveredUuids.add(uuid);
@@ -83,8 +87,18 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
           if (existingAccessory) {
             this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
 
-            const s = await this.melviewService!.getStatus(device.unitid);
-            existingAccessory.context.device.state = s;
+            // Refresh capabilities every launch; localip moves with DHCP and is
+            // required for the Melview `lc` to unit `/smart` LAN hop.
+            const [c, s] = await Promise.all([
+              this.melviewService!.capabilities(device.unitid),
+              this.melviewService!.getStatus(device.unitid),
+            ]);
+            existingAccessory.context.device = {
+              ...existingAccessory.context.device,
+              ...device,
+              capabilities: c,
+              state: s,
+            };
             this.registerAccessoryHandler(existingAccessory);
           } else {
             this.log.info('Adding new accessory:', device.room, '[', device.unitid, ']:', uuid);
@@ -107,10 +121,86 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
         }
       }
 
+      this.syncDiscoveredUnitsToConfig(discoveredUnits);
       this.removeStaleAccessories(discoveredUuids);
     } catch(e) {
       this.log.error('Failed to process platform discovery. Fix the problem and restart the service.');
       this.log.debug(String(e));
+    }
+  }
+
+  /**
+   * Seed `perUnitOverrides` in Homebridge `config.json` with each discovered
+   * unit (room + unitId) so the config UI lists the account's units without
+   * making the user look up unit IDs. Existing overrides are preserved.
+   */
+  private syncDiscoveredUnitsToConfig(units: Unit[]): void {
+    try {
+      const configPath = this.api.user.configPath();
+      const raw = fs.readFileSync(configPath, 'utf8');
+      const root = JSON.parse(raw) as { platforms?: Array<Record<string, unknown>> };
+      const plat = root.platforms?.find((p) => p?.platform === PLATFORM_NAME);
+      if (!plat) {
+        return;
+      }
+
+      const existing = Array.isArray(plat.perUnitOverrides)
+        ? (plat.perUnitOverrides as Array<Record<string, unknown>>)
+        : [];
+      const byId = new Map<string, Record<string, unknown>>();
+      for (const entry of existing) {
+        const id = typeof entry?.unitId === 'string' ? entry.unitId : undefined;
+        if (id) {
+          byId.set(id, { ...entry });
+        }
+      }
+
+      const defaultBooleans: Record<string, boolean> = {
+        fanSpeed: typeof plat.fanSpeed === 'boolean' ? plat.fanSpeed : true,
+        swingMode: typeof plat.swingMode === 'boolean' ? plat.swingMode : false,
+        dry: typeof plat.dry === 'boolean' ? plat.dry : false,
+        outdoorTemp: typeof plat.outdoorTemp === 'boolean' ? plat.outdoorTemp : false,
+        airflowH: typeof plat.airflowH === 'boolean' ? plat.airflowH : false,
+        fanMode: typeof plat.fanMode === 'boolean' ? plat.fanMode : false,
+      };
+
+      let changed = false;
+      const merged: Array<Record<string, unknown>> = [];
+      for (const unit of units) {
+        const current = byId.get(unit.unitid);
+        const next: Record<string, unknown> = {
+          room: unit.room,
+          unitId: unit.unitid,
+          ...defaultBooleans,
+          ...(current ?? {}),
+        };
+        next.room = unit.room;
+        next.unitId = unit.unitid;
+        for (const [k, v] of Object.entries(defaultBooleans)) {
+          if (typeof next[k] !== 'boolean') {
+            next[k] = v;
+            changed = true;
+          }
+        }
+        if (!current || current.room !== unit.room) {
+          changed = true;
+        }
+        merged.push(next);
+        byId.delete(unit.unitid);
+      }
+
+      if (byId.size > 0 || merged.length !== existing.length) {
+        changed = true;
+      }
+
+      this.config.perUnitOverrides = merged;
+      if (changed) {
+        plat.perUnitOverrides = merged;
+        fs.writeFileSync(configPath, JSON.stringify(root, null, 2) + '\n', 'utf8');
+        this.log.info('Synced', merged.length, 'unit(s) into perUnitOverrides config');
+      }
+    } catch (e) {
+      this.log.debug('Skipping perUnitOverrides config sync:', String(e));
     }
   }
 

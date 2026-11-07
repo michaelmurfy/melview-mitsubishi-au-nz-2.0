@@ -1,7 +1,7 @@
 {
   "displayName": "AU/NZ Mitsubishi Air-Conditioners Bridge 2.0",
   "name": "homebridge-airconditioner-mitsubishi-au-nz-v2",
-  "version": "1.4.0",
+  "version": "1.4.9",
   "description": "Control your Mitsubishi Aircon units with Homebridge and Apple HomeKit",
   "license": "Apache-2.0",
   "type": "module",
@@ -25,7 +25,9 @@
     "lint": "eslint . --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
-    "prepublishOnly": "npm run lint && npm run build"
+    "test": "npm run build && node --test test/**/*.test.mjs",
+    "check:local-smart": "npm run test",
+    "prepublishOnly": "npm run lint && npm run test"
   },
   "keywords": [
     "homebridge-plugin",

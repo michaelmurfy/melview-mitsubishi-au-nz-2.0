@@ -1,6 +1,7 @@
 import { CharacteristicValue, Logger, PlatformAccessory, Service, WithUUID } from 'homebridge';
 import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
 import { Unit } from '../data.js';
+import { fanStageToPercent, percentToFanStage } from '../fanSpeed.js';
 
 export abstract class AbstractService {
   protected service: Service;
@@ -12,13 +13,17 @@ export abstract class AbstractService {
   ) {
     this.device = accessory.context.device;
     if (!this.device.name) {
-      this.device.name = this.getDeviceRoom();
+      this.device.name = this.device.room || this.getDeviceRoom();
     }
-    this.log.info('Set Device:', this.device.name);
-    this.service = this.accessory.getService(this.getServiceType()) ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.accessory.addService(this.getServiceType() as any);
-    this.service.setCharacteristic(this.platform.Characteristic.Name, this.device.name);
+    this.log.debug('Set Device service:', this.getServiceDisplayName());
+    this.service = this.findOrCreateService();
+    this.service.setCharacteristic(this.platform.Characteristic.Name, this.getServiceDisplayName());
+    if (this.service.testCharacteristic(this.platform.Characteristic.ConfiguredName)) {
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.ConfiguredName,
+        this.getServiceDisplayName(),
+      );
+    }
 
     this.service.getCharacteristic(this.platform.Characteristic.Active)
       .onSet(this.setActive.bind(this))
@@ -28,6 +33,29 @@ export abstract class AbstractService {
   protected abstract getServiceType<T extends WithUUID<typeof Service>>(): T;
   protected abstract getDeviceRoom(): string;
   protected abstract getDeviceName(): string;
+
+  /** Short HomeKit label for linked services (e.g. "Dry"). */
+  protected getServiceDisplayName(): string {
+    return this.device.name ?? this.getDeviceRoom();
+  }
+
+  /** Stable subtype so linked services survive restarts without colliding. */
+  protected getServiceSubtype(): string | undefined {
+    return undefined;
+  }
+
+  private findOrCreateService(): Service {
+    const type = this.getServiceType();
+    const subtype = this.getServiceSubtype();
+    if (subtype) {
+      return this.accessory.getServiceById(type, subtype) ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.accessory.addService(type as any, this.getServiceDisplayName(), subtype);
+    }
+    return this.accessory.getService(type) ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.accessory.addService(type as any);
+  }
 
   get characteristic() {
     return this.platform.api.hap.Characteristic;
@@ -51,40 +79,12 @@ export abstract class AbstractService {
 
   abstract getActive(): Promise<CharacteristicValue>;
 
-  /**
-   * Maps a Melview fan stage (0,1,2,3,5,6) to a HomeKit percentage (0–100 in steps of 20).
-   */
   protected fanStageToPercent(stage: number): number {
-    switch (stage) {
-      case 1: return 20;
-      case 2: return 40;
-      case 3: return 60;
-      case 5: return 80;
-      case 6: return 100;
-      default: return 0; // auto
-    }
+    return fanStageToPercent(stage);
   }
 
-  /**
-   * Maps a HomeKit percentage back to a Melview fan stage code.
-   */
   protected percentToFanStage(percent: number): number {
-    if (percent <= 0) {
-      return 0;
-    }
-    if (percent <= 20) {
-      return 1;
-    }
-    if (percent <= 40) {
-      return 2;
-    }
-    if (percent <= 60) {
-      return 3;
-    }
-    if (percent <= 80) {
-      return 5;
-    }
-    return 6;
+    return percentToFanStage(percent);
   }
 
   /**

@@ -22,8 +22,16 @@ export class DryService extends AbstractService {
       .onGet(this.getTargetHumidifierDehumidifierState.bind(this));
   }
 
+  protected getServiceDisplayName(): string {
+    return 'Dry';
+  }
+
+  protected getServiceSubtype(): string {
+    return 'dry';
+  }
+
   async getActive(): Promise<CharacteristicValue> {
-    this.log.info('GET DRY ACTIVE [', this.getDeviceName(), '] =', this.device.state!.power, 'DRY =', this.device.state?.setmode);
+    this.log.debug('GET DRY ACTIVE power=', this.device.state?.power, 'mode=', this.device.state?.setmode);
     if (this.device.state?.setmode !== WorkMode.DRY) {
       return this.platform.Characteristic.Active.INACTIVE;
     }
@@ -51,7 +59,7 @@ export class DryService extends AbstractService {
   }
 
   protected getDeviceRoom(): string {
-    return this.device.room + ' Dehumidifier';
+    return this.device.room;
   }
 
   protected getDeviceName(): string {
@@ -87,8 +95,11 @@ export class DryService extends AbstractService {
   }
 
   public syncFromState(): void {
-    super.syncFromState();
     const c = this.platform.Characteristic;
+    // Do not use AbstractService.syncFromState — Active is mode-gated for Dry.
+    void this.getActive().then((active) => {
+      this.service.updateCharacteristic(c.Active, active);
+    });
     void this.getCurrentHumidifierDehumidifierState().then((currentState) => {
       this.service.updateCharacteristic(c.CurrentHumidifierDehumidifierState, currentState);
     });

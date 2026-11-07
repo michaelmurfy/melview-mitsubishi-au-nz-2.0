@@ -24,12 +24,17 @@ export abstract class AbstractCommand implements Command {
   }
 
   public getLocalCommandURL(): string {
-    return 'http://' + this.device.capabilities!.localip + '/smart';
+    const ip = this.device.capabilities?.localip?.trim();
+    if (!ip) {
+      throw new Error('Unit localip unavailable for /smart hop');
+    }
+    return 'http://' + ip + '/smart';
   }
 
   public getLocalCommandBody(key: string): string {
+    // `key` is Melview's pre-encrypted ESV ciphertext (base64), not plaintext CSV.
     return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<ESV>' + key + '</ESV>';
+            '<ESV>' + key + '</ESV>';
   }
 }
 

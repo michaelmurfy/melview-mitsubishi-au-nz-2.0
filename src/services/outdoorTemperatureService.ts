@@ -3,9 +3,7 @@ import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
 import { Unit } from '../data.js';
 
 /**
- * Exposes a TemperatureSensor HomeKit service for the outdoor unit temperature.
- * Read-only — uses the `outdoortemp` field already present in the Melview state payload.
- * Only registered when the initial state poll returns a numeric outdoor temperature.
+ * Linked outdoor TemperatureSensor on the same accessory as HeaterCooler.
  */
 export class OutdoorTemperatureService {
   private readonly service: Service;
@@ -17,14 +15,12 @@ export class OutdoorTemperatureService {
   ) {
     this.device = accessory.context.device;
 
-    const name = (this.device.name ?? this.device.room) + ' Outdoor';
-
     this.service =
-      this.accessory.getService(this.platform.Service.TemperatureSensor) ||
+      this.accessory.getServiceById(this.platform.Service.TemperatureSensor, 'outdoor') ||
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.accessory.addService(this.platform.Service.TemperatureSensor as any, name, 'outdoor-temperature');
+      this.accessory.addService(this.platform.Service.TemperatureSensor as any, 'Outdoor', 'outdoor');
 
-    this.service.setCharacteristic(this.platform.Characteristic.Name, name);
+    this.service.setCharacteristic(this.platform.Characteristic.Name, 'Outdoor');
 
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.minValue = -50;
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).props.maxValue = 70;
@@ -34,6 +30,10 @@ export class OutdoorTemperatureService {
       .onGet(this.getCurrentTemperature.bind(this));
 
     platform.log.info('OUTDOOR TEMPERATURE Capability:', this.device.room, '[COMPLETED]');
+  }
+
+  public getService(): Service {
+    return this.service;
   }
 
   async getCurrentTemperature(): Promise<CharacteristicValue> {

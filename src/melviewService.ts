@@ -116,18 +116,45 @@ export class MelviewService {
       throw new Error('Command rejected by Melview API: ' + (rBody.error || 'unknown error'));
     }
     if (rBody.lc && rBody.lc.length > 0) {
-      const xmlBody = command.getLocalCommandBody(rBody.lc);
-      fetch(command.getLocalCommandURL(), {
-        method: 'POST',
-        body: xmlBody,
-      }).then(r =>{
-        r.text().then(v => {
-          this.log.debug('Successfully processed local request:', v);
-        }).finally();
-      }).catch(e => {
-        this.log.warn('Unable to access unit via direct LAN interface.', e);
-      }).finally();
+      this.forwardLocalCommand(command, rBody.lc);
     }
+  }
+
+  /**
+   * Melview returns an AES-wrapped `/smart` payload in `lc` (MAC-568 / MAC-577
+   * family ESV envelope). Forward it on the LAN for snappier local apply; cloud
+   * already accepted the command so failures are warnings only.
+   */
+  private forwardLocalCommand(command: Command, lc: string): void {
+    let url: string;
+    try {
+      url = command.getLocalCommandURL();
+    } catch (e) {
+      this.log.debug('Skipping local /smart hop:', String(e));
+      return;
+    }
+
+    const xmlBody = command.getLocalCommandBody(lc);
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;chrset=UTF-8',
+        'User-Agent': 'KirigamineRemote/5.1.0',
+        'Connection': 'close',
+      },
+      body: xmlBody,
+      signal: AbortSignal.timeout(3000),
+    }).then(async r => {
+      const body = await r.text();
+      if (!r.ok) {
+        this.log.warn(`Local /smart hop HTTP ${r.status}`);
+        return;
+      }
+      // Do not log the URL (contains LAN IP); status/bytes only.
+      this.log.debug('Local /smart hop ok, bytes=', body.length);
+    }).catch(e => {
+      this.log.warn('Unable to access unit via direct LAN interface.', String(e));
+    });
   }
 
   /**
