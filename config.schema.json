@@ -2,6 +2,7 @@
   "pluginAlias": "MitsubishiAUNZ",
   "pluginType": "platform",
   "singular": true,
+  "fixArrays": true,
   "headerDisplay": "Mitsubishi Wi-Fi Control credentials.",
   "schema": {
     "type": "object",
@@ -63,10 +64,11 @@
         "title": "Units",
         "type": "array",
         "items": {
+          "title": "Unit",
           "type": "object",
           "properties": {
             "room": {
-              "title": "Unit",
+              "title": "Room",
               "type": "string",
               "readonly": true
             },
@@ -119,7 +121,7 @@
     },
     {
       "type": "fieldset",
-      "title": "HomeKit",
+      "title": "HomeKit Defaults",
       "items": ["fanSpeed", "swingMode", "dry", "outdoorTemp", "airflowH", "fanMode", "pollIntervalSeconds"]
     },
     {
@@ -129,19 +131,32 @@
       "expandable": true,
       "expanded": true,
       "orderable": false,
+      "addable": false,
+      "removable": false,
       "items": [
         {
-          "type": "flex",
-          "flex-flow": "row wrap",
-          "items": ["perUnitOverrides[].room", "perUnitOverrides[].unitId"]
-        },
-        "perUnitOverrides[].fanSpeed",
-        "perUnitOverrides[].swingMode",
-        "perUnitOverrides[].dry",
-        "perUnitOverrides[].outdoorTemp",
-        "perUnitOverrides[].airflowH",
-        "perUnitOverrides[].fanMode",
-        "perUnitOverrides[].pollIntervalSeconds"
+          "type": "fieldset",
+          "title": "{{ value.room || 'Unit' }} ({{ value.unitId || idx }})",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            {
+              "type": "flex",
+              "flex-flow": "row wrap",
+              "items": [
+                "perUnitOverrides[].room",
+                "perUnitOverrides[].unitId"
+              ]
+            },
+            "perUnitOverrides[].fanSpeed",
+            "perUnitOverrides[].swingMode",
+            "perUnitOverrides[].dry",
+            "perUnitOverrides[].outdoorTemp",
+            "perUnitOverrides[].airflowH",
+            "perUnitOverrides[].fanMode",
+            "perUnitOverrides[].pollIntervalSeconds"
+          ]
+        }
       ]
     }
   ]

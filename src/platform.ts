@@ -155,6 +155,15 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
         }
       }
 
+      const defaultBooleans: Record<string, boolean> = {
+        fanSpeed: typeof plat.fanSpeed === 'boolean' ? plat.fanSpeed : true,
+        swingMode: typeof plat.swingMode === 'boolean' ? plat.swingMode : false,
+        dry: typeof plat.dry === 'boolean' ? plat.dry : false,
+        outdoorTemp: typeof plat.outdoorTemp === 'boolean' ? plat.outdoorTemp : false,
+        airflowH: typeof plat.airflowH === 'boolean' ? plat.airflowH : false,
+        fanMode: typeof plat.fanMode === 'boolean' ? plat.fanMode : false,
+      };
+
       let changed = false;
       const merged: Array<Record<string, unknown>> = [];
       for (const unit of units) {
@@ -162,10 +171,17 @@ export class MelviewMitsubishiHomebridgePlatform implements DynamicPlatformPlugi
         const next: Record<string, unknown> = {
           room: unit.room,
           unitId: unit.unitid,
+          ...defaultBooleans,
           ...(current ?? {}),
         };
         next.room = unit.room;
         next.unitId = unit.unitid;
+        for (const [k, v] of Object.entries(defaultBooleans)) {
+          if (typeof next[k] !== 'boolean') {
+            next[k] = v;
+            changed = true;
+          }
+        }
         if (!current || current.room !== unit.room) {
           changed = true;
         }
