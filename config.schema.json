@@ -23,11 +23,11 @@
         "required": true
       },
       "capabilityMode": {
-        "title": "Main tile",
+        "title": "Setup mode",
         "type": "string",
         "default": "auto",
         "oneOf": [
-          { "title": "Auto (fan speed on AC tile when supported)", "enum": ["auto"] },
+          { "title": "Auto (AC tile + Fan tile with Auto / 5 speeds)", "enum": ["auto"] },
           { "title": "Manual", "enum": ["manual"] }
         ]
       },
@@ -44,9 +44,9 @@
         "maximum": 300
       },
       "fanSpeed": {
-        "title": "Fan speed on AC tile",
+        "title": "Fan speed tile (Auto + 5 stages)",
         "type": "boolean",
-        "default": false
+        "default": true
       },
       "swingMode": {
         "title": "Vertical swing on AC tile",
@@ -54,29 +54,29 @@
         "default": false
       },
       "dry": {
-        "title": "Dry mode (extra service)",
+        "title": "Dry mode tile",
         "type": "boolean",
         "default": false
       },
       "fanMode": {
-        "title": "Fan-only mode (extra service)",
+        "title": "Fan-only mode",
         "type": "boolean",
         "default": false
       },
       "airflowH": {
-        "title": "Horizontal swing (extra service)",
+        "title": "Horizontal swing switch",
         "type": "boolean",
         "default": false
       },
       "outdoorTemp": {
-        "title": "Outdoor temperature (extra service)",
+        "title": "Outdoor temperature sensor",
         "type": "boolean",
         "default": false
       },
       "fanSpeedOnMainTile": {
-        "title": "Fan speed on main tile",
+        "title": "Fan speed on AC tile (advanced)",
         "type": "boolean",
-        "default": true
+        "default": false
       },
       "perUnitOverrides": {
         "title": "Per-unit overrides",
@@ -90,7 +90,7 @@
               "required": true
             },
             "capabilityMode": {
-              "title": "Main tile",
+              "title": "Setup mode",
               "type": "string",
               "oneOf": [
                 { "title": "Auto", "enum": ["auto"] },
@@ -102,7 +102,7 @@
               "type": "boolean"
             },
             "fanSpeed": {
-              "title": "Fan speed on AC tile",
+              "title": "Fan speed tile (Auto + 5 stages)",
               "type": "boolean"
             },
             "swingMode": {
@@ -110,7 +110,7 @@
               "type": "boolean"
             },
             "dry": {
-              "title": "Dry mode",
+              "title": "Dry mode tile",
               "type": "boolean"
             },
             "fanMode": {
@@ -118,15 +118,15 @@
               "type": "boolean"
             },
             "airflowH": {
-              "title": "Horizontal swing",
+              "title": "Horizontal swing switch",
               "type": "boolean"
             },
             "outdoorTemp": {
-              "title": "Outdoor temperature",
+              "title": "Outdoor temperature sensor",
               "type": "boolean"
             },
             "fanSpeedOnMainTile": {
-              "title": "Fan speed on main tile",
+              "title": "Fan speed on AC tile",
               "type": "boolean"
             },
             "pollIntervalSeconds": {
@@ -153,8 +153,8 @@
     },
     {
       "type": "fieldset",
-      "title": "Extra services (off by default)",
-      "items": ["dry", "fanMode", "airflowH", "outdoorTemp"]
+      "title": "Optional tiles",
+      "items": ["dry", "outdoorTemp", "airflowH", "fanMode", "fanSpeedOnMainTile"]
     },
     {
       "key": "perUnitOverrides",
@@ -168,9 +168,9 @@
         "fanSpeed",
         "swingMode",
         "dry",
-        "fanMode",
-        "airflowH",
         "outdoorTemp",
+        "airflowH",
+        "fanMode",
         "pollIntervalSeconds"
       ]
     }

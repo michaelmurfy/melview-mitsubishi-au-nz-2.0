@@ -94,17 +94,21 @@ export class MelviewMitsubishiPlatformAccessory {
     }
 
     /*********************************************************
-         * Fan-Only Mode (opt-in). Separate Fanv2 service; not shown on the AC tile.
+         * Fan Speed (Auto + 5 stages) / Fan-Only Mode
          *********************************************************/
-    if (this.effectiveConfig.fanMode) {
+    if (this.effectiveConfig.fanMode || this.effectiveConfig.fanSpeed) {
       this.fanModeService = new FanModeService(this.platform, this.accessory);
-      this.platform.log.info('FAN MODE Capability:', device.room, ' [COMPLETED]');
+      this.platform.log.info(
+        'FAN Capability:',
+        device.room,
+        this.effectiveConfig.fanSpeed ? '[AUTO + 5 STAGES]' : '[FAN-ONLY]',
+      );
     } else {
       const stale = this.accessory.getServiceById(this.platform.Service.Fanv2, 'fan')
         || this.accessory.getService(this.platform.Service.Fanv2);
       if (stale) {
         this.accessory.removeService(stale);
-        this.platform.log.info('FAN MODE Capability:', device.room, ' [REMOVED]');
+        this.platform.log.info('FAN Capability:', device.room, ' [REMOVED]');
       }
     }
 
@@ -211,10 +215,10 @@ export class MelviewMitsubishiPlatformAccessory {
     const caps = this.accessory.context.device?.capabilities;
     const capabilityMode = this.resolveCapabilityMode(override);
     const auto = capabilityMode === 'auto';
-    // Auto only adds native HeaterCooler fan speed. Extra services stay opt-in
-    // so the Home app tile is not crowded with Dry/Fan/Swing switches.
-    const fanSpeed = this.resolveBoolean('fanSpeed', false, override)
-      || (auto && (caps?.fanstage ?? 0) > 0);
+    // Auto adds the Fanv2 speed service (native Auto/Manual + 5 stages).
+    // RotationSpeed stays off HeaterCooler by default because 0% on HeaterCooler
+    // tells HomeKit to power the AC off instead of setting Auto fan.
+    const fanSpeed = this.resolveBoolean('fanSpeed', auto && (caps?.fanstage ?? 0) > 0, override);
 
     return {
       capabilityMode,
@@ -224,7 +228,7 @@ export class MelviewMitsubishiPlatformAccessory {
       airflowH: this.resolveBoolean('airflowH', false, override),
       swingMode: this.resolveBoolean('swingMode', false, override),
       fanSpeed,
-      fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', true, override) || fanSpeed,
+      fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override),
       outdoorTemp: this.resolveBoolean('outdoorTemp', false, override),
       pollIntervalSeconds: this.resolveNumber('pollIntervalSeconds', 30, override),
     };

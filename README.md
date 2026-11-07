@@ -113,9 +113,13 @@ Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` → 
 
 ## HomeKit Services
 
-Each AC unit is one **Air Conditioner** accessory with a single HeaterCooler service by
-default (power, heat/cool/auto, temperatures, optional fan speed). Extra modes such as
-Dry or Fan-only are off unless you enable them; HomeKit has no Dry target on HeaterCooler.
+Each AC unit exposes two focused HomeKit services by default in `capabilityMode: auto`:
+1. **HeaterCooler** (power, Auto / Heat / Cool, target and current temperatures in °C, fault status)
+2. **Fan (`Fanv2`)** with native **Auto / Manual** (`TargetFanState`) plus a 5-stage speed slider (`20%`–`100%`) that adjusts fan speed in whichever mode the AC is running in
+
+Why Fan is a `Fanv2` instead of `RotationSpeed` on `HeaterCooler`: in Apple Home, dragging a `HeaterCooler` speed slider to `0%` turns the whole unit off, and `HeaterCooler` has no `TargetFanState` Auto button. `Fanv2` gives a real **Auto** toggle and lets you step up/down from there.
+
+Extra tiles (Dry dehumidifier, Outdoor sensor, Horizontal swing switch, Fan-only mode) stay off unless enabled.
 
 ### Heater / Cooler
 
@@ -123,7 +127,6 @@ Dry or Fan-only are off unless you enable them; HomeKit has no Dry target on Hea
 - Current / target state (auto / heat / cool)
 - Current and threshold temperatures (°C)
 - Status fault when offline or unit fault
-- Fan speed on the main tile in auto mode when the unit reports fan stages
 - Vertical swing when `swingMode` is enabled
 
 ### Fan speed mapping
