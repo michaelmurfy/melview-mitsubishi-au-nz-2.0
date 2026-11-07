@@ -67,21 +67,19 @@ All configuration is done via the Homebridge UI settings panel or by editing
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `user` | string | yes | — | Mitsubishi Wi-Fi Control email |
-| `password` | string | yes | — | Mitsubishi Wi-Fi Control password |
-| `capabilityMode` | `auto` \| `manual` | no | `auto` | Auto enables dry / outdoor temp / horizontal swing from Melview capability flags per unit |
-| `preferLocalControl` | boolean | no | `true` | After Melview accepts a command, also POST to the unit `/smart` LAN endpoint when known |
-| `dry` | boolean | no | `false` | Manual (or force-on): Dehumidifier accessory |
-| `fanMode` | boolean | no | `false` | Fan accessory for fan-only mode |
-| `swingMode` | boolean | no | `false` | Vertical swing on the main tile (always opt-in) |
-| `airflowH` | boolean | no | `false` | Manual (or force-on): horizontal swing switch |
-| `fanSpeed` | boolean | no | `false` | Experimental fan-speed slider on a Fan accessory |
-| `fanSpeedOnMainTile` | boolean | no | `false` | Also show fan speed on the main AC tile |
-| `outdoorTemp` | boolean | no | `false` | Manual (or force-on): outdoor temperature sensor |
-| `pollIntervalSeconds` | integer | no | `30` | Melview poll interval (`5`–`300`) |
-| `perUnitOverrides` | array | no | — | Optional overrides keyed by Melview `unitId` |
+| `user` | string | yes | - | Mitsubishi Wi-Fi Control email |
+| `password` | string | yes | - | Mitsubishi Wi-Fi Control password |
+| `fanSpeed` | boolean | no | `true` | Fan tile with Auto / Manual and 5 speeds |
+| `swingMode` | boolean | no | `false` | Vertical swing on the AC tile |
+| `dry` | boolean | no | `false` | Dry mode (Dehumidifier tile) |
+| `outdoorTemp` | boolean | no | `false` | Outdoor temperature sensor |
+| `airflowH` | boolean | no | `false` | Horizontal swing switch |
+| `fanMode` | boolean | no | `false` | Fan-only mode (`WorkMode.FAN`) |
+| `preferLocalControl` | boolean | no | `true` | POST commands to unit `/smart` on LAN after Melview |
+| `pollIntervalSeconds` | integer | no | `30` | Melview poll interval (`5` to `300`) |
+| `perUnitOverrides` | array | no | - | Per-unit overrides keyed by `unitId` |
 
-Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` → `MAC-568IF-E`) and logged at startup. Accessory Information **Model** uses that label.
+Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` to `MAC-568IF-E`) and set as the accessory Model.
 
 ### Example `config.json`
 
@@ -93,19 +91,7 @@ Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` → 
       "name": "MitsubishiAUNZ",
       "user": "user@example.com",
       "password": "yourpassword",
-      "capabilityMode": "auto",
-      "preferLocalControl": true,
-      "swingMode": false,
-      "fanSpeed": false,
-      "pollIntervalSeconds": 30,
-      "perUnitOverrides": [
-        {
-          "unitId": "1234567890",
-          "capabilityMode": "manual",
-          "fanSpeed": true,
-          "pollIntervalSeconds": 15
-        }
-      ]
+      "fanSpeed": true
     }
   ]
 }
@@ -113,9 +99,9 @@ Wi-Fi modules are detected from Melview `adaptortype` (for example `mac568` → 
 
 ## HomeKit Services
 
-Each AC unit exposes two focused HomeKit services by default in `capabilityMode: auto`:
+Each AC unit exposes two focused HomeKit services by default:
 1. **HeaterCooler** (power, Auto / Heat / Cool, target and current temperatures in °C, fault status)
-2. **Fan (`Fanv2`)** with native **Auto / Manual** (`TargetFanState`) plus a 5-stage speed slider (`20%`–`100%`) that adjusts fan speed in whichever mode the AC is running in
+2. **Fan (`Fanv2`)** with native **Auto / Manual** (`TargetFanState`) plus a 5-stage speed slider (`20%` to `100%`) that adjusts fan speed in whichever mode the AC is running in
 
 Why Fan is a `Fanv2` instead of `RotationSpeed` on `HeaterCooler`: in Apple Home, dragging a `HeaterCooler` speed slider to `0%` turns the whole unit off, and `HeaterCooler` has no `TargetFanState` Auto button. `Fanv2` gives a real **Auto** toggle and lets you step up/down from there.
 

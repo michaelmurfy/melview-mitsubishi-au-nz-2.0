@@ -2,7 +2,7 @@
   "pluginAlias": "MitsubishiAUNZ",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Mitsubishi Wi-Fi Control credentials. Units are discovered via Melview.",
+  "headerDisplay": "Mitsubishi Wi-Fi Control credentials.",
   "schema": {
     "type": "object",
     "properties": {
@@ -22,17 +22,38 @@
         "type": "string",
         "required": true
       },
-      "capabilityMode": {
-        "title": "Setup mode",
-        "type": "string",
-        "default": "auto",
-        "oneOf": [
-          { "title": "Auto (AC tile + Fan tile with Auto / 5 speeds)", "enum": ["auto"] },
-          { "title": "Manual", "enum": ["manual"] }
-        ]
+      "fanSpeed": {
+        "title": "Fan speed (Auto + 5 stages)",
+        "type": "boolean",
+        "default": true
+      },
+      "swingMode": {
+        "title": "Vertical swing",
+        "type": "boolean",
+        "default": false
+      },
+      "dry": {
+        "title": "Dry mode",
+        "type": "boolean",
+        "default": false
+      },
+      "outdoorTemp": {
+        "title": "Outdoor temperature",
+        "type": "boolean",
+        "default": false
+      },
+      "airflowH": {
+        "title": "Horizontal swing",
+        "type": "boolean",
+        "default": false
+      },
+      "fanMode": {
+        "title": "Fan-only mode",
+        "type": "boolean",
+        "default": false
       },
       "preferLocalControl": {
-        "title": "LAN /smart hop after Melview commands",
+        "title": "LAN /smart hop",
         "type": "boolean",
         "default": true
       },
@@ -42,41 +63,6 @@
         "default": 30,
         "minimum": 5,
         "maximum": 300
-      },
-      "fanSpeed": {
-        "title": "Fan speed tile (Auto + 5 stages)",
-        "type": "boolean",
-        "default": true
-      },
-      "swingMode": {
-        "title": "Vertical swing on AC tile",
-        "type": "boolean",
-        "default": false
-      },
-      "dry": {
-        "title": "Dry mode tile",
-        "type": "boolean",
-        "default": false
-      },
-      "fanMode": {
-        "title": "Fan-only mode",
-        "type": "boolean",
-        "default": false
-      },
-      "airflowH": {
-        "title": "Horizontal swing switch",
-        "type": "boolean",
-        "default": false
-      },
-      "outdoorTemp": {
-        "title": "Outdoor temperature sensor",
-        "type": "boolean",
-        "default": false
-      },
-      "fanSpeedOnMainTile": {
-        "title": "Fan speed on AC tile (advanced)",
-        "type": "boolean",
-        "default": false
       },
       "perUnitOverrides": {
         "title": "Per-unit overrides",
@@ -89,44 +75,32 @@
               "type": "string",
               "required": true
             },
-            "capabilityMode": {
-              "title": "Setup mode",
-              "type": "string",
-              "oneOf": [
-                { "title": "Auto", "enum": ["auto"] },
-                { "title": "Manual", "enum": ["manual"] }
-              ]
-            },
-            "preferLocalControl": {
-              "title": "LAN /smart hop",
-              "type": "boolean"
-            },
             "fanSpeed": {
-              "title": "Fan speed tile (Auto + 5 stages)",
+              "title": "Fan speed (Auto + 5 stages)",
               "type": "boolean"
             },
             "swingMode": {
-              "title": "Vertical swing on AC tile",
+              "title": "Vertical swing",
               "type": "boolean"
             },
             "dry": {
-              "title": "Dry mode tile",
+              "title": "Dry mode",
+              "type": "boolean"
+            },
+            "outdoorTemp": {
+              "title": "Outdoor temperature",
+              "type": "boolean"
+            },
+            "airflowH": {
+              "title": "Horizontal swing",
               "type": "boolean"
             },
             "fanMode": {
               "title": "Fan-only mode",
               "type": "boolean"
             },
-            "airflowH": {
-              "title": "Horizontal swing switch",
-              "type": "boolean"
-            },
-            "outdoorTemp": {
-              "title": "Outdoor temperature sensor",
-              "type": "boolean"
-            },
-            "fanSpeedOnMainTile": {
-              "title": "Fan speed on AC tile",
+            "preferLocalControl": {
+              "title": "LAN /smart hop",
               "type": "boolean"
             },
             "pollIntervalSeconds": {
@@ -148,29 +122,32 @@
     },
     {
       "type": "fieldset",
-      "title": "Control",
-      "items": ["capabilityMode", "preferLocalControl", "pollIntervalSeconds", "fanSpeed", "swingMode"]
+      "title": "HomeKit",
+      "items": ["fanSpeed", "swingMode", "dry", "outdoorTemp", "airflowH", "fanMode"]
     },
     {
       "type": "fieldset",
-      "title": "Optional tiles",
-      "items": ["dry", "outdoorTemp", "airflowH", "fanMode", "fanSpeedOnMainTile"]
+      "title": "Network",
+      "expandable": true,
+      "expanded": false,
+      "items": ["preferLocalControl", "pollIntervalSeconds"]
     },
     {
       "key": "perUnitOverrides",
       "type": "array",
       "title": "Per-unit overrides",
+      "expandable": true,
+      "expanded": false,
       "buttonText": "Add override",
       "items": [
         "unitId",
-        "capabilityMode",
-        "preferLocalControl",
         "fanSpeed",
         "swingMode",
         "dry",
         "outdoorTemp",
         "airflowH",
         "fanMode",
+        "preferLocalControl",
         "pollIntervalSeconds"
       ]
     }

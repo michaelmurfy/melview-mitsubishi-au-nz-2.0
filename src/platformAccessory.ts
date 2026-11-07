@@ -10,7 +10,6 @@ import { OutdoorTemperatureService } from './services/outdoorTemperatureService.
 import { formatWifiModule, supportsLocalSmart } from './wifiModule.js';
 
 interface EffectiveConfig {
-  capabilityMode: 'auto' | 'manual';
   preferLocalControl: boolean;
   dry: boolean;
   fanMode: boolean;
@@ -213,30 +212,20 @@ export class MelviewMitsubishiPlatformAccessory {
   private resolveEffectiveConfig(unitId: string): EffectiveConfig {
     const override = this.getUnitOverride(unitId);
     const caps = this.accessory.context.device?.capabilities;
-    const capabilityMode = this.resolveCapabilityMode(override);
-    const auto = capabilityMode === 'auto';
-    // Auto adds the Fanv2 speed service (native Auto/Manual + 5 stages).
-    // RotationSpeed stays off HeaterCooler by default because 0% on HeaterCooler
-    // tells HomeKit to power the AC off instead of setting Auto fan.
-    const fanSpeed = this.resolveBoolean('fanSpeed', auto && (caps?.fanstage ?? 0) > 0, override);
+    const hasFanStages = (caps?.fanstage ?? 0) > 0;
 
     return {
-      capabilityMode,
       preferLocalControl: this.resolveBoolean('preferLocalControl', true, override),
       dry: this.resolveBoolean('dry', false, override),
       fanMode: this.resolveBoolean('fanMode', false, override),
       airflowH: this.resolveBoolean('airflowH', false, override),
       swingMode: this.resolveBoolean('swingMode', false, override),
-      fanSpeed,
+      // Fan speed is on by default when the unit supports fan stages.
+      fanSpeed: this.resolveBoolean('fanSpeed', true, override) && hasFanStages,
       fanSpeedOnMainTile: this.resolveBoolean('fanSpeedOnMainTile', false, override),
       outdoorTemp: this.resolveBoolean('outdoorTemp', false, override),
       pollIntervalSeconds: this.resolveNumber('pollIntervalSeconds', 30, override),
     };
-  }
-
-  private resolveCapabilityMode(override?: Record<string, unknown>): 'auto' | 'manual' {
-    const value = override?.capabilityMode ?? this.platform.config.capabilityMode;
-    return value === 'manual' ? 'manual' : 'auto';
   }
 
   private getUnitOverride(unitId: string): Record<string, unknown> | undefined {
