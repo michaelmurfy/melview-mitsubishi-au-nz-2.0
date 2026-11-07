@@ -1,6 +1,7 @@
 import { CharacteristicValue, Logger, PlatformAccessory, Service, WithUUID } from 'homebridge';
 import { MelviewMitsubishiHomebridgePlatform } from '../platform.js';
 import { Unit } from '../data.js';
+import { fanStageToPercent, percentToFanStage } from '../fanSpeed.js';
 
 export abstract class AbstractService {
   protected service: Service;
@@ -78,40 +79,12 @@ export abstract class AbstractService {
 
   abstract getActive(): Promise<CharacteristicValue>;
 
-  /**
-   * Maps a Melview fan stage (0,1,2,3,5,6) to a HomeKit percentage (0–100 in steps of 20).
-   */
   protected fanStageToPercent(stage: number): number {
-    switch (stage) {
-      case 1: return 20;
-      case 2: return 40;
-      case 3: return 60;
-      case 5: return 80;
-      case 6: return 100;
-      default: return 0; // auto
-    }
+    return fanStageToPercent(stage);
   }
 
-  /**
-   * Maps a HomeKit percentage back to a Melview fan stage code.
-   */
   protected percentToFanStage(percent: number): number {
-    if (percent <= 0) {
-      return 0;
-    }
-    if (percent <= 20) {
-      return 1;
-    }
-    if (percent <= 40) {
-      return 2;
-    }
-    if (percent <= 60) {
-      return 3;
-    }
-    if (percent <= 80) {
-      return 5;
-    }
-    return 6;
+    return percentToFanStage(percent);
   }
 
   /**

@@ -25,8 +25,9 @@
     "lint": "eslint . --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
-    "check:local-smart": "npm run build && node scripts/check-local-smart.mjs",
-    "prepublishOnly": "npm run lint && npm run build"
+    "test": "npm run build && node --test test/**/*.test.mjs",
+    "check:local-smart": "npm run test",
+    "prepublishOnly": "npm run lint && npm run test"
   },
   "keywords": [
     "homebridge-plugin",

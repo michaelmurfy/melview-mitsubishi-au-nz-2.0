@@ -79,6 +79,29 @@ Wi-Fi module types are mapped from Melview `adaptortype` (for example `mac568` -
 
 Turning the Fan tile off returns the unit to Auto fan without turning the air conditioner off.
 
+## Development
+
+```bash
+npm ci
+npm run lint
+npm test
+```
+
+## Publishing to npm
+
+CI runs lint, build, and tests on every push/PR.
+
+Publish to [npmjs](https://www.npmjs.com/package/homebridge-airconditioner-mitsubishi-au-nz-v2/) by either:
+1. Creating a GitHub Release, or
+2. Running **Actions -> Publish to npm -> Run workflow**
+
+Setup once:
+1. Create an npm Automation access token at https://www.npmjs.com/settings/~/tokens
+2. In the GitHub repo: **Settings -> Secrets and variables -> Actions**
+3. Add repository secret `NPM_TOKEN` with that token value
+
+The publish workflow uses `npm publish --access public --provenance`.
+
 ## Credits
 
 - [aurc/melview-mitsubishi-au-nz](https://github.com/aurc/melview-mitsubishi-au-nz)
